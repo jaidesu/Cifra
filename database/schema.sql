@@ -1,0 +1,63 @@
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
+  revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  next_id BIGINT UNSIGNED NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS categories (
+  user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) COLLATE utf8mb4_bin NOT NULL,
+  icon VARCHAR(32) NOT NULL,
+  color CHAR(7) NOT NULL,
+  position INT UNSIGNED NOT NULL,
+  PRIMARY KEY (user_id, name),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS transactions (
+  user_id BIGINT UNSIGNED NOT NULL,
+  id BIGINT UNSIGNED NOT NULL,
+  type VARCHAR(10) NOT NULL,
+  category_name VARCHAR(100) COLLATE utf8mb4_bin NULL,
+  description VARCHAR(255) NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  transaction_date DATE NOT NULL,
+  is_paid BOOLEAN NOT NULL,
+  PRIMARY KEY (user_id,id),
+  INDEX by_date (user_id,transaction_date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id,category_name) REFERENCES categories(user_id,name) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS budgets (
+  user_id BIGINT UNSIGNED NOT NULL,
+  category_name VARCHAR(100) COLLATE utf8mb4_bin NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  PRIMARY KEY (user_id,category_name),
+  FOREIGN KEY (user_id,category_name) REFERENCES categories(user_id,name) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id BIGINT UNSIGNED PRIMARY KEY,
+  preferences TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS dismissed_notifications (
+  user_id BIGINT UNSIGNED NOT NULL,
+  notification_key VARCHAR(190) COLLATE utf8mb4_bin NOT NULL,
+  PRIMARY KEY (user_id,notification_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+  bucket CHAR(64) PRIMARY KEY,
+  attempts INT UNSIGNED NOT NULL,
+  started BIGINT UNSIGNED NOT NULL,
+  INDEX by_time (started)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
