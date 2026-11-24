@@ -32,6 +32,24 @@ function createAccount(string $name, string $email, string $hash): void {
     });
 }
 
+function registerAccount(array $input): void {
+    foreach (['name','email','password'] as $key) {
+        if (!is_string($input[$key] ?? null)) invalid('Preencha nome, e-mail e senha.');
+    }
+    $account = validateAccount($input['name'],$input['email'],$input['password']);
+    try {
+        if (query('SELECT 1 FROM users WHERE email=?',[$account[1]])->fetchColumn()) {
+            throw new ApiError(409,'EMAIL_EXISTS','Este e-mail já está cadastrado.');
+        }
+        createAccount(...$account);
+    } catch (PDOException $e) {
+        if ((int)($e->errorInfo[1] ?? 0) === 1062) {
+            throw new ApiError(409,'EMAIL_EXISTS','Este e-mail já está cadastrado.');
+        }
+        throw $e;
+    }
+}
+
 function installOwner(array $input): void {
     if (!localRequest()) throw new ApiError(403,'LOCAL_ONLY','O primeiro acesso exige localhost.');
     foreach (['name','email','password'] as $key) {

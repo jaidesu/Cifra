@@ -73,7 +73,7 @@ function dispatch(): array {
     $route = $_GET['r'] ?? '';
     $method = $_SERVER['REQUEST_METHOD'];
     if ($method === 'GET' && $route === 'auth/me') return ['user'=>$user,'csrf'=>$_SESSION['csrf'],'setup'=>!$user && ownerNeeded()];
-    if (!$user && $route !== 'auth/login' && !($local && $route === 'setup/owner')) expired();
+    if (!$user && !in_array($route,['auth/login','auth/register','setup/owner'],true)) expired();
     $uid = (int)($user['id'] ?? 0);
     if ($method === 'GET' && $route === 'state') return transaction(fn()=>snapshot($uid));
     if ($method !== 'POST') throw new ApiError(405,'METHOD','Método não permitido.');
@@ -85,7 +85,12 @@ function dispatch(): array {
     catch (JsonException $e) { invalid('JSON inválido.'); }
     if (!is_array($input) || array_key_exists('user_id',$input)) invalid('Requisição inválida.');
     if ($route === 'setup/owner') {
-        installOwner($input);
+        if ($local && ownerNeeded()) installOwner($input);
+        else registerAccount($input);
+        return ['created'=>true];
+    }
+    if ($route === 'auth/register') {
+        registerAccount($input);
         return ['created'=>true];
     }
     if ($route === 'auth/login') return login($input);

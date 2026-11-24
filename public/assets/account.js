@@ -1,6 +1,5 @@
 'use strict';
 let firstAccess = false;
-let setupAvailable = false;
 let registrationMode = false;
 let csrf = '', revision = 0, busy = false, stale = false;
 
@@ -89,7 +88,6 @@ async function openAccount(session) {
   csrf = session.csrf;
   if (!session.user) {
     firstAccess = session.setup === true;
-    setupAvailable = session.setup === true;
     $('loginForm').hidden = false;
     setAccessMode(firstAccess);
     return;
@@ -121,16 +119,11 @@ $('loginForm').addEventListener('submit', async event=>{
   event.preventDefault();
   if ($('enter').disabled) return;
   $('enter').disabled = true;
-  if (registrationMode && !setupAvailable) {
-    $('loginStatus').textContent = 'O cadastro está disponível apenas no primeiro acesso deste Cifra.';
-    $('enter').disabled = false;
-    return;
-  }
   $('loginStatus').textContent = registrationMode ? 'Preparando sua conta…' : 'Entrando…';
   try {
     const credentials = {email:$('email').value.trim(), password:$('password').value};
     if (registrationMode) {
-      await api('setup/owner',{...credentials,name:$('ownerName').value.trim()});
+      await api('auth/register',{...credentials,name:$('ownerName').value.trim()});
       await openAccount({user:null,csrf,setup:false});
     }
     const session = await api('auth/login',credentials);
