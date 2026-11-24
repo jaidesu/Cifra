@@ -24,6 +24,10 @@
       <button class="btn" id="enter">Entrar</button>
     </form>
     <p id="loginStatus" role="status">Verificando sua sessão…</p>
+    <div class="access-switch" id="accessSwitchBox">
+      <span id="accessSwitchMessage"></span>
+      <button type="button" class="link" id="accessSwitch"></button>
+    </div>
     <button type="button" id="retry" class="btn sec" hidden onclick="location.reload()">Tentar novamente</button>
   </div>
 </section>

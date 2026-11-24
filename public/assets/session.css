@@ -9,6 +9,8 @@
 .login .btn{margin-top:18px}
 #loginStatus{color:var(--sub);font-size:14px;margin-top:15px}
 #loginStatus:empty{display:none}
+.access-switch{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;color:var(--sub);font-size:14px;text-align:center}
+.access-switch .link{color:var(--acfg)}
 #sync{position:fixed;z-index:150;top:12px;left:50%;transform:translateX(-50%);max-width:min(92vw,600px);width:max-content;background:var(--card);border:1px solid var(--borda);padding:10px 16px;border-radius:10px;box-shadow:var(--sombra)}
 #sync.error{border-color:var(--verm)}
 #refresh{margin-left:8px}

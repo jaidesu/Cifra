@@ -1,5 +1,7 @@
 'use strict';
 let firstAccess = false;
+let setupAvailable = false;
+let registrationMode = false;
 let csrf = '', revision = 0, busy = false, stale = false;
 
 async function api(route, data) {
@@ -32,6 +34,22 @@ function accept(data) {
   S = data.state;
   S.orc = Object.assign(Object.create(null),S.orc);
   revision = data.revision;
+}
+
+function setAccessMode(register) {
+  registrationMode = register;
+  $('accessTitle').textContent = registrationMode ? 'Crie sua conta do Cifra' : 'Acesse sua conta';
+  $('nameGroup').hidden = !registrationMode;
+  $('ownerName').required = registrationMode;
+  $('password').autocomplete = registrationMode ? 'new-password' : 'current-password';
+  $('password').minLength = registrationMode ? 12 : 1;
+  $('enter').textContent = registrationMode ? 'Criar conta' : 'Entrar';
+  $('accessSwitchMessage').textContent = registrationMode ? 'Já tem uma conta?' : 'Ainda não tem uma conta?';
+  $('accessSwitch').textContent = registrationMode ? 'Entrar' : 'Cadastre-se';
+  $('loginStatus').textContent = registrationMode
+    ? 'Escolha uma senha de pelo menos 12 caracteres.'
+    : '';
+  $(registrationMode ? 'ownerName' : 'email').focus();
 }
 
 function redraw() {
@@ -71,15 +89,9 @@ async function openAccount(session) {
   csrf = session.csrf;
   if (!session.user) {
     firstAccess = session.setup === true;
-    $('accessTitle').textContent = firstAccess ? 'Crie sua conta do Cifra' : 'Acesse sua conta';
-    $('nameGroup').hidden = !firstAccess;
-    $('ownerName').required = firstAccess;
-    $('password').autocomplete = firstAccess ? 'new-password' : 'current-password';
-    $('password').minLength = firstAccess ? 12 : 1;
-    $('enter').textContent = firstAccess ? 'Criar conta' : 'Entrar';
+    setupAvailable = session.setup === true;
     $('loginForm').hidden = false;
-    $('loginStatus').textContent = firstAccess ? 'Escolha uma senha de pelo menos 12 caracteres.' : '';
-    $(firstAccess ? 'ownerName' : 'email').focus();
+    setAccessMode(firstAccess);
     return;
   }
   accept(await api('state'));
@@ -100,14 +112,24 @@ async function start() {
   }
 }
 
+$('accessSwitch').addEventListener('click',()=>{
+  setAccessMode(!registrationMode);
+  $('retry').hidden = true;
+});
+
 $('loginForm').addEventListener('submit', async event=>{
   event.preventDefault();
   if ($('enter').disabled) return;
   $('enter').disabled = true;
-  $('loginStatus').textContent = firstAccess ? 'Preparando sua conta…' : 'Entrando…';
+  if (registrationMode && !setupAvailable) {
+    $('loginStatus').textContent = 'O cadastro está disponível apenas no primeiro acesso deste Cifra.';
+    $('enter').disabled = false;
+    return;
+  }
+  $('loginStatus').textContent = registrationMode ? 'Preparando sua conta…' : 'Entrando…';
   try {
     const credentials = {email:$('email').value.trim(), password:$('password').value};
-    if (firstAccess) {
+    if (registrationMode) {
       await api('setup/owner',{...credentials,name:$('ownerName').value.trim()});
       await openAccount({user:null,csrf,setup:false});
     }
