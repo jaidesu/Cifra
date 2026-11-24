@@ -1,0 +1,7 @@
+/.runtime/
+/app/config.local.php
+/.env*
+/backups/
+*.log
+backup*.json
+financas-*.csv

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="320" viewBox="0 0 880 320"><title>Cifra</title>
+<path fill="#000000" fill-rule="evenodd" transform="matrix(4 0 0 4 40 24)" d="M 29 4 L 64 4 L 53 18 L 30 18 C 23 18 19 22 18 29 L 16 42 C 15 49 18 52 25 52 L 62 52 L 51 66 L 23 66 C 8 66 0 57 2 42 L 4 28 C 6 13 14 4 29 4 Z"/>
+<path fill="#000000" fill-rule="evenodd" transform="matrix(4 0 0 4 40 24)" d="M 72 4 L 85 4 L 83 17 L 70 17 Z M 69 23 L 82 23 L 76 66 L 63 66 Z"/>
+<path fill="#000000" fill-rule="evenodd" transform="matrix(4 0 0 4 40 24)" d="M 91 23 L 92 18 C 94 6 101 1 113 1 L 126 1 L 124 12 L 114 12 C 109 12 106 14 105 20 L 105 23 L 121 23 L 113 34 L 103 34 L 98 66 L 85 66 L 90 34 L 83 34 L 85 23 Z"/>
+<path fill="#000000" fill-rule="evenodd" transform="matrix(4 0 0 4 40 24)" d="M 126 23 L 139 23 L 138 30 C 143 24 148 22 158 22 L 156 35 L 152 35 C 142 35 137 40 136 48 L 133 66 L 120 66 Z"/>
+<path fill="#000000" fill-rule="evenodd" transform="matrix(4 0 0 4 40 24)" d="M 161 26 C 168 23 174 22 181 22 C 195 22 201 29 199 41 L 196 66 L 183 66 L 184 61 C 180 65 175 67 169 67 C 159 67 153 62 154 54 C 155 44 162 39 175 39 L 187 39 C 187 34 184 32 178 32 C 172 32 168 33 162 36 Z M 186 47 L 176 47 C 170 47 167 49 167 53 C 166 56 169 58 173 58 C 180 58 184 54 186 49 Z"/>
+</svg>
