@@ -83,6 +83,8 @@ function aplicarTema(){
   };
   Object.entries(vars).forEach(([k,v])=>r.style.setProperty('--'+k, v));
   r.style.colorScheme = escuro ? 'dark' : 'light';
+  const marca = $('marcaLateral'), arquivoMarca = escuro ? 'assets/marca/cifra-escuro.svg' : 'assets/marca/cifra-claro.svg';
+  if (marca.getAttribute('src') !== arquivoMarca) marca.src = arquivoMarca;
   $('btTema').textContent = escuro ? '☀️' : '🌙';
   if (temChart){ Chart.defaults.color = PAL.sub; Chart.defaults.borderColor = PAL.grade; Chart.defaults.font.family = FONTE; Chart.defaults.font.size = 12; }
 }

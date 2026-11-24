@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cifra · Finanças pessoais</title>
+<link rel="icon" href="assets/marca/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="assets/marca/cifra-180.png" sizes="180x180">
+<link rel="manifest" href="cifra.webmanifest">
 <link rel="stylesheet" href="assets/finance.css">
 <link rel="stylesheet" href="assets/session.css">
 <script defer src="assets/chart.umd.js"></script>
@@ -15,7 +19,7 @@
 <body>
 <section class="login" id="loginPane" aria-label="Acesso ao Cifra">
   <div class="login-card">
-    <div class="wordmark"><span aria-hidden="true">C</span>Cifra</div>
+    <img class="wordmark" src="assets/marca/cifra-escuro.svg" width="144" height="52" alt="Cifra">
     <h1 id="accessTitle">Acesse sua conta</h1>
     <form id="loginForm" hidden>
       <div id="nameGroup" hidden><label for="ownerName">Seu nome</label><input id="ownerName" maxlength="30" autocomplete="name"></div>
@@ -35,7 +39,7 @@
 <div id="workspace" hidden>
 <div class="app" id="app">
   <aside class="lado">
-    <div class="logo"><span>Cifra</span></div>
+    <div class="logo"><img id="marcaLateral" src="assets/marca/cifra-escuro.svg" width="108" height="39" alt="Cifra"></div>
     <button class="perfil" onclick="abrir('ajustes')" title="Abrir perfil e ajustes">
       <span class="av" id="sAv"></span>
       <span class="pf"><b id="sNome"></b><small>Perfil e ajustes</small></span>
@@ -55,6 +59,7 @@
 
   <main><div class="conteudo">
     <header class="topo">
+      <img class="marca-compacta" src="assets/marca/favicon.svg" width="32" height="32" alt="Cifra">
       <div><div class="oi" id="oi"></div><h1 id="tituloPg">Painel</h1></div>
       <div class="dir">
         <button class="btn" onclick="abrirForm()">＋ Lançar</button>
