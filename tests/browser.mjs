@@ -44,8 +44,41 @@ try {
     assert.equal(await run("!$('nameGroup').hidden"),true);
     await run("$('ownerName').value='Conta de teste'");
   }
+  await run("$('remember').checked=true");
   await run("$('email').value="+JSON.stringify(process.env.CIFRA_TEST_B)+"; $('password').value="+JSON.stringify(process.env.CIFRA_TEST_PASSWORD)+"; $('enter').click()");
   await wait("!$('workspace').hidden && $('kEnt').textContent");
+  for (const width of [820,1024]) {
+    await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+    await run("$('menuToggle').click()");
+    assert.equal(await run("$('menuToggle').getAttribute('aria-expanded')"),'false');
+    assert.equal(await run("getComputedStyle($('sideMenu')).display==='none' && getComputedStyle($('bottomMenu')).display==='none'"),true);
+    await run("$('menuToggle').click()");
+    assert.equal(await run("getComputedStyle($('sideMenu')).display!=='none' || getComputedStyle($('bottomMenu')).display!=='none'"),true);
+  }
+  await run("abrir('ajustes'); $('confirmPassword').value="+JSON.stringify(process.env.CIFRA_TEST_PASSWORD)+"; $('privacySecret').value='641973'; $('privacyForm').requestSubmit()");
+  await wait("protectedPanel && !$('privacyForm').inert");
+  const jar = (await send('Network.getCookies',{urls:[process.env.CIFRA_TEST_URL+'api/index.php']})).result.cookies;
+  const device = jar.find(cookie=>cookie.name.endsWith('_device'));
+  assert.ok(device?.httpOnly && device.expires>Date.now()/1000);
+  const sessionCookie = jar.find(cookie=>cookie.name.startsWith('cifra_') && !cookie.name.endsWith('_device'));
+  await send('Network.deleteCookies',{name:sessionCookie.name,domain:sessionCookie.domain,path:sessionCookie.path});
+  await send('Page.reload');
+  await wait("document.querySelector('#unlockForm')?.hidden===false");
+  assert.equal(await run("$('workspace').hidden"),true);
+  assert.equal(await run("fetch('api/index.php?r=state').then(r=>r.status)"),423);
+  await run("$('unlockSecret').value='wrong'; $('unlockForm').requestSubmit()");
+  await wait("$('loginStatus').textContent.includes('incorretos')");
+  await run("$('unlockSecret').value='641973'; $('unlockForm').requestSubmit()");
+  await wait("!$('workspace').hidden && $('kEnt').textContent");
+  await run("abrir('ajustes'); $('confirmPassword').value="+JSON.stringify(process.env.CIFRA_TEST_PASSWORD)+"; $('privacySecret').value='minha senha fictícia'; $('privacyForm').requestSubmit()");
+  await wait("!$('privacyForm').inert");
+  await send('Page.reload');
+  await wait("document.querySelector('#unlockForm')?.hidden===false");
+  await run("$('unlockSecret').value='minha senha fictícia'; $('unlockForm').requestSubmit()");
+  await wait("!$('workspace').hidden && $('kEnt').textContent");
+  await run("abrir('ajustes'); window.confirm=()=>true; $('confirmPassword').value="+JSON.stringify(process.env.CIFRA_TEST_PASSWORD)+"; $('disablePrivacy').click()");
+  await wait("!protectedPanel && !$('privacyForm').inert");
+  await run("abrir('painel')");
   await run("document.querySelector('.ladoBase button').click(); document.querySelector('#fCats button').click(); $('fVal').value='24,90'; $('fData').value='2024-01-31'; $('fDesc').value='Fatura fictícia'; $('fRep').value='3'; document.querySelector('.mdBase .btn:last-child').click()");
   await wait('S.lanc.length===3 && !busy');
   assert.deepEqual(await run('S.lanc.map(l=>l.data)'),['2024-01-31','2024-02-29','2024-03-31']);
@@ -78,6 +111,10 @@ try {
   assert.equal(await run("change('settings/set',{cfg:{tom:'azul'}})"),false);
   assert.equal(await run('S.cfg.tom'),'neutro');
   assert.equal(await run("$('refresh').hidden"),false);
+  await run("window.fetch=window.realFetch; sair()");
+  await wait("document.querySelector('#loginForm')?.hidden===false");
+  const afterLogout = (await send('Network.getCookies',{urls:[process.env.CIFRA_TEST_URL+'api/index.php']})).result.cookies;
+  assert.ok(!afterLogout.some(cookie=>cookie.name.endsWith('_device')));
   assert.deepEqual(errors,[]);
   console.log('OK: telas desktop e móvel, recorrência, filtros, gráficos, orçamento, exportação JSON/CSV, importação, falha de rede e renderização sem gravação.');
 } finally {

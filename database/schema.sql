@@ -61,3 +61,17 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   started BIGINT UNSIGNED NOT NULL,
   INDEX by_time (started)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+CREATE TABLE IF NOT EXISTS panel_locks (
+    user_id BIGINT UNSIGNED PRIMARY KEY,
+    secret_hash VARCHAR(255) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS remembered_devices (
+    token_hash CHAR(64) PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    expires_at BIGINT UNSIGNED NOT NULL,
+    INDEX (expires_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

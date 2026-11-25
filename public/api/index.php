@@ -2,6 +2,8 @@
 declare(strict_types=1);
 require_once dirname(__DIR__,2) . '/app/first-access.php';
 
+require_once dirname(__DIR__,2) . '/app/privacy.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -21,8 +23,9 @@ function clearSession(): void {
 function signedUser(): ?array {
     if (!isset($_SESSION['uid'])) return null;
     if (time()-$_SESSION['last'] >= 1800 || time()-$_SESSION['start'] >= 43200) {
-        clearSession();
-        expired();
+        session_regenerate_id(true);
+        $_SESSION = ['csrf'=>bin2hex(random_bytes(32))];
+        return null;
     }
     $user = query("SELECT id,name,email FROM users WHERE id=? AND status='active'",[$_SESSION['uid']])->fetch();
     if (!$user) { clearSession(); expired(); }
@@ -30,13 +33,8 @@ function signedUser(): ?array {
     return $user;
 }
 
-function login(array $input): array {
-    $email = $input['email'] ?? '';
-    $password = $input['password'] ?? '';
-    if (!is_string($email) || strlen($email)>190 || !is_string($password) || strlen($password)>1024) invalid('Credenciais inválidas.');
-    $email = strtolower(trim($email));
+function reserveAttempt(string $bucket): void {
     $now = time();
-    $bucket = hash('sha256',$_SERVER['REMOTE_ADDR'] ?? 'local');
     // Reserve the attempt under a row lock, including concurrent requests.
     transaction(function() use ($bucket,$now) {
         query('DELETE FROM login_attempts WHERE started<=?',[$now-900]);
@@ -45,15 +43,27 @@ function login(array $input): array {
         if ($count >= 12) throw new ApiError(429,'TOO_MANY_ATTEMPTS','Muitas tentativas. Tente novamente em 15 minutos.');
         query('UPDATE login_attempts SET attempts=attempts+1 WHERE bucket=?',[$bucket]);
     });
+}
+
+function login(array $input): array {
+    $email = $input['email'] ?? '';
+    $password = $input['password'] ?? '';
+    if (!is_string($email) || strlen($email)>190 || !is_string($password) || strlen($password)>1024) invalid('Credenciais inválidas.');
+    $email = strtolower(trim($email));
+    $bucket = hash('sha256',$_SERVER['REMOTE_ADDR'] ?? 'local');
+    reserveAttempt($bucket);
     $user = query('SELECT id,password_hash,status FROM users WHERE email=?',[$email])->fetch();
     $dummy = '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
     if (!password_verify($password,$user['password_hash'] ?? $dummy) || !$user || $user['status'] !== 'active') {
         throw new ApiError(401,'INVALID_LOGIN','E-mail ou senha incorretos.');
     }
     query('DELETE FROM login_attempts WHERE bucket=?',[$bucket]);
-    session_regenerate_id(true);
-    $_SESSION = ['uid'=>(int)$user['id'],'start'=>$now,'last'=>$now,'csrf'=>bin2hex(random_bytes(32))];
-    return ['user'=>signedUser(),'csrf'=>$_SESSION['csrf']];
+    forgetDevice();
+    $uid = (int)$user['id'];
+    $protected = panelHash($uid) !== '';
+    if (($input['remember'] ?? false) === true) rememberDevice($uid);
+    beginLogin($uid);
+    return ['user'=>signedUser(),'csrf'=>$_SESSION['csrf'],'protected'=>$protected];
 }
 
 function dispatch(): array {
@@ -69,12 +79,21 @@ function dispatch(): array {
     session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>$https,'httponly'=>true,'samesite'=>'Lax']);
     session_start();
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
-    $user = signedUser();
     $route = $_GET['r'] ?? '';
     $method = $_SERVER['REQUEST_METHOD'];
-    if ($method === 'GET' && $route === 'auth/me') return ['user'=>$user,'csrf'=>$_SESSION['csrf'],'setup'=>!$user && ownerNeeded()];
+    $user = signedUser();
+    if (!$user && $route === 'auth/me' && $method === 'GET') {
+        resumeDevice();
+        $user = signedUser();
+    }
+    $hash = $user ? panelHash((int)$user['id']) : '';
+    if ($method === 'GET' && $route === 'auth/me') return ['user'=>$user,'csrf'=>$_SESSION['csrf'],'protected'=>$hash !== '','setup'=>!$user && ownerNeeded()];
     if (!$user && !in_array($route,['auth/login','auth/register','setup/owner'],true)) expired();
     $uid = (int)($user['id'] ?? 0);
+    if ($hash !== '' && !in_array($route,['auth/unlock','auth/logout','auth/login'],true)
+        && !hash_equals(panelProof($hash),$_SERVER['HTTP_X_PANEL_PROOF'] ?? '')) {
+        throw new ApiError(423,'PANEL_LOCKED','Desbloqueie o painel para continuar.');
+    }
     if ($method === 'GET' && $route === 'state') return transaction(fn()=>snapshot($uid));
     if ($method !== 'POST') throw new ApiError(405,'METHOD','Método não permitido.');
     if (!hash_equals($_SESSION['csrf'],$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) throw new ApiError(403,'CSRF','Atualize a página e tente novamente.');
@@ -94,7 +113,9 @@ function dispatch(): array {
         return ['created'=>true];
     }
     if ($route === 'auth/login') return login($input);
-    if ($route === 'auth/logout') { clearSession(); return []; }
+    if ($route === 'auth/unlock' && $hash !== '') return unlockPanel($uid,$hash,$input);
+    if ($route === 'auth/privacy') return configurePanel($uid,$input);
+    if ($route === 'auth/logout') { forgetDevice(); clearSession(); return []; }
     return transaction(function () use ($uid,$route,$input) {
         $account = query('SELECT revision,next_id FROM users WHERE id=? FOR UPDATE',[$uid])->fetch();
         if (($input['revision'] ?? null) !== (int)$account['revision']) {

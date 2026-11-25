@@ -25,7 +25,15 @@
       <div id="nameGroup" hidden><label for="ownerName">Seu nome</label><input id="ownerName" maxlength="30" autocomplete="name"></div>
       <label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required maxlength="190">
       <label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required>
+      <label class="remember"><input type="checkbox" id="remember"> Lembrar de mim por 30 dias neste navegador</label>
       <button class="btn" id="enter">Entrar</button>
+    </form>
+    <form id="unlockForm" hidden>
+      <label for="unlockSecret">PIN de privacidade ou senha</label>
+      <input id="unlockSecret" type="password" autocomplete="off" required>
+      <p class="sub">Você também pode usar a senha da conta.</p>
+      <button class="btn" id="unlockButton">Desbloquear painel</button>
+      <button class="link" type="button" onclick="sair()">Sair da conta</button>
     </form>
     <p id="loginStatus" role="status">Verificando sua sessão…</p>
     <div class="access-switch" id="accessSwitchBox">
@@ -38,7 +46,7 @@
 <noscript>Ative o JavaScript para acessar o Cifra.</noscript>
 <div id="workspace" hidden>
 <div class="app" id="app">
-  <aside class="lado">
+  <aside class="lado" id="sideMenu">
     <div class="logo"><img id="marcaLateral" src="assets/marca/cifra-escuro.svg" width="108" height="39" alt="Cifra"></div>
     <button class="perfil" onclick="abrir('ajustes')" title="Abrir perfil e ajustes">
       <span class="av" id="sAv"></span>
@@ -59,6 +67,7 @@
 
   <main><div class="conteudo">
     <header class="topo">
+      <button type="button" class="btn sec" id="menuToggle" aria-controls="sideMenu bottomMenu" aria-expanded="true">Recolher menu</button>
       <img class="marca-compacta" src="assets/marca/favicon.svg" width="32" height="32" alt="Cifra">
       <div><div class="oi" id="oi"></div><h1 id="tituloPg">Painel</h1></div>
       <div class="dir">
@@ -176,7 +185,17 @@
           <input id="aNome" maxlength="30" placeholder="Digite seu nome" autocomplete="off" ><button class="btn sec" onclick="defNome()">Salvar nome</button>
           <span class="rot">Avatar</span><div class="chips" id="aAvs"></div>
         </div>
-        <div class="card"><h2>🔒 Acesso</h2><p class="sub"><span id="accountEmail"></span></p><button class="btn sec" onclick="sair()">Sair da conta</button></div>
+        <div class="card"><h2>🔒 Acesso</h2><p class="sub"><span id="accountEmail"></span></p><p id="privacyState"></p>
+          <form id="privacyForm">
+            <label class="rot" for="confirmPassword">Senha atual da conta</label>
+            <input type="password" id="confirmPassword" autocomplete="current-password" required>
+            <label class="rot" for="privacySecret">Novo PIN ou senha de privacidade</label>
+            <input type="password" id="privacySecret" autocomplete="new-password">
+            <p class="sub">Use pelo menos 6 dígitos para o PIN ou 8 caracteres para a senha. O painel bloqueia ao abrir ou voltar à aba.</p>
+            <div class="botoes"><button class="btn sec" type="submit">Salvar bloqueio</button>
+            <button class="btn sec" type="submit" id="disablePrivacy" hidden>Desativar bloqueio</button></div>
+            <p role="status" id="privacyStatus"></p>
+          </form><button class="btn sec" onclick="sair()">Sair da conta</button></div>
         <div class="card"><h2>🎨 Aparência</h2><p class="sub">Muda na hora, em todas as telas e gráficos.</p>
           <span class="rot">Tema</span>
           <div class="seg" id="aTema"><button data-v="escuro">🌙 Escuro</button><button data-v="claro">☀️ Claro</button><button data-v="auto">Seguir o aparelho</button></div>
@@ -225,7 +244,7 @@
   </div></main>
 </div>
 
-<nav class="baixo" aria-label="Seções">
+<nav id="bottomMenu" class="baixo" aria-label="Seções">
   <button class="ativa" data-pg="painel" onclick="abrir('painel')"><span class="ic">📊</span>Painel</button>
   <button data-pg="lanc" onclick="abrir('lanc')"><span class="ic">📋</span>Lista</button>
   <button data-pg="graficos" onclick="abrir('graficos')"><span class="ic">📈</span>Gráficos</button>

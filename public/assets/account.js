@@ -1,4 +1,5 @@
 'use strict';
+let panelProof = '', protectedPanel = false, pendingSession = null;
 let firstAccess = false;
 let registrationMode = false;
 let csrf = '', revision = 0, busy = false, stale = false;
@@ -7,6 +8,7 @@ async function api(route, data) {
   let response, result;
   const options = {credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(90000)};
   if (data !== undefined) Object.assign(options, {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body:JSON.stringify(data)});
+  if (panelProof) options.headers = {...options.headers,'X-Panel-Proof':panelProof};
   try {
     response = await fetch('api/index.php?r='+encodeURIComponent(route), options);
     result = await response.json();
@@ -14,6 +16,7 @@ async function api(route, data) {
     throw new Error('A conexão foi interrompida. Recarregue para conferir o que ficou salvo.');
   }
   if (!response.ok || !result.success) {
+    if (result.error?.code === 'PANEL_LOCKED') { $('workspace').hidden = true; location.reload(); }
     const error = new Error(result.error?.message || 'O servidor não confirmou a operação.');
     error.code = result.error?.code;
     error.status = response.status;
@@ -92,11 +95,23 @@ async function openAccount(session) {
     setAccessMode(firstAccess);
     return;
   }
+  protectedPanel = session.protected === true;
+  if (protectedPanel && !panelProof) {
+    pendingSession = session;
+    $('loginForm').hidden = $('accessSwitchBox').hidden = true;
+    $('accessTitle').textContent = 'Desbloqueie seu painel';
+    $('unlockForm').hidden = false;
+    $('loginStatus').textContent = '';
+    $('unlockSecret').focus();
+    return;
+  }
   accept(await api('state'));
+  showPrivacyState();
   P.ref = periodoInicial();
   $('accountEmail').textContent = session.user.email;
   $('loginPane').hidden = true;
   $('workspace').hidden = false;
+  if (protectedPanel && document.hidden) { coverPanel(); return; }
   redraw();
   avisarNav();
 }
@@ -121,7 +136,7 @@ $('loginForm').addEventListener('submit', async event=>{
   $('enter').disabled = true;
   $('loginStatus').textContent = registrationMode ? 'Preparando sua conta…' : 'Entrando…';
   try {
-    const credentials = {email:$('email').value.trim(), password:$('password').value};
+    const credentials = {email:$('email').value.trim(), password:$('password').value,remember:$('remember').checked};
     if (registrationMode) {
       await api('auth/register',{...credentials,name:$('ownerName').value.trim()});
       await openAccount({user:null,csrf,setup:false});
@@ -222,4 +237,71 @@ function apagarLancamentos() {
     return change('transactions/clear',{},()=>toast('Lançamentos apagados.'));
   }
 }
+function showPrivacyState() {
+  $('privacyState').textContent = protectedPanel ? 'Bloqueio de privacidade ativado.' : 'Bloqueio de privacidade desativado.';
+  $('disablePrivacy').hidden = !protectedPanel;
+}
+
+$('unlockForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  if ($('unlockButton').disabled) return;
+  $('unlockButton').disabled = true;
+  try {
+    const result = await api('auth/unlock',{secret:$('unlockSecret').value});
+    $('unlockSecret').value = '';
+    panelProof = result.proof;
+    await openAccount(pendingSession);
+  } catch (error) {
+    $('loginStatus').textContent = error.message;
+    $('retry').hidden = error.code === 'WRONG_SECRET';
+  }
+  finally { $('unlockButton').disabled = false; }
+});
+
+$('privacyForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const remove = event.submitter === $('disablePrivacy');
+  const secret = remove ? '' : $('privacySecret').value;
+  if (!remove && !secret) { $('privacyStatus').textContent = 'Digite o novo PIN ou senha.'; return; }
+  if (remove && !confirm('Desativar o bloqueio de privacidade desta conta?')) return;
+  const form = event.currentTarget;
+  form.inert = true;
+  try {
+    const result = await api('auth/privacy',{secret,password:$('confirmPassword').value});
+    protectedPanel = result.enabled;
+    panelProof = result.proof;
+    form.reset();
+    showPrivacyState();
+    $('privacyStatus').textContent = 'Preferência salva.';
+  } catch (error) { $('privacyStatus').textContent = error.message; }
+  finally { form.inert = false; }
+});
+
+let covered = false;
+function coverPanel() {
+  if (!protectedPanel || $('workspace').hidden) return;
+  covered = true;
+  panelProof = '';
+  $('workspace').hidden = true;
+  $('sync').hidden = true;
+}
+window.addEventListener('pagehide',coverPanel);
+document.addEventListener('visibilitychange',()=>{
+  if (document.hidden) coverPanel();
+  else if (covered) location.reload();
+});
+
+function setMenuCollapsed(collapsed) {
+  $('workspace').classList.toggle('menu-collapsed',collapsed);
+  $('menuToggle').setAttribute('aria-expanded',String(!collapsed));
+  $('menuToggle').textContent = collapsed ? 'Mostrar menu' : 'Recolher menu';
+}
+let collapsed = false;
+try { collapsed = localStorage.getItem('cifra.menuCollapsed') === '1'; } catch {}
+setMenuCollapsed(collapsed);
+$('menuToggle').addEventListener('click',()=>{
+  collapsed = !collapsed;
+  setMenuCollapsed(collapsed);
+  try { localStorage.setItem('cifra.menuCollapsed',collapsed ? '1' : '0'); } catch {}
+});
 start();

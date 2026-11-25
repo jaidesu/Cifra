@@ -14,3 +14,14 @@
 #sync{position:fixed;z-index:150;top:12px;left:50%;transform:translateX(-50%);max-width:min(92vw,600px);width:max-content;background:var(--card);border:1px solid var(--borda);padding:10px 16px;border-radius:10px;box-shadow:var(--sombra)}
 #sync.error{border-color:var(--verm)}
 #refresh{margin-left:8px}
+
+.login label.remember{display:flex;align-items:center;gap:8px;font-size:14px}
+.remember input{width:auto;flex:none}
+#privacyForm{margin:12px 0 18px}
+#privacyForm .botoes{margin-top:12px}
+@media(min-width:601px){
+  .menu-collapsed .app{grid-template-columns:minmax(0,1fr)}
+  .menu-collapsed .lado,.menu-collapsed .baixo{display:none}
+  .menu-collapsed main{padding-bottom:24px}
+}
+@media(max-width:600px){#menuToggle{display:none}}

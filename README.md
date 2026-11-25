@@ -15,6 +15,18 @@ Se o seu MySQL usa outra porta, usuário ou senha, copie **app/config.example.ph
 
 O cadastro inicial fica disponível apenas por localhost e até a criação da primeira conta. Abrir uma instalação com contas existentes leva ao login. A versão do XAMPP usa seu próprio banco. Se você lançou dados na versão portátil anterior, mantenha a cópia antiga e transfira-os por backup JSON. O ZIP exclui bancos, credenciais locais, programas portáteis e dados de teste.
 
+## Menu, navegador lembrado e privacidade
+
+No tablet ou computador, **Recolher menu** libera espaço no painel. **Mostrar menu** traz a navegação de volta. O navegador guarda essa preferência. Em celulares com largura de até 600 px, a navegação inferior continua disponível.
+
+Ao entrar, **Lembrar de mim** permite retomar a conta nesse navegador por até 30 dias. **Sair da conta** cancela essa autorização no dispositivo. Use a opção em um aparelho pessoal.
+
+Em **Ajustes → Acesso**, confirme a senha da conta e escolha um PIN com pelo menos 6 dígitos ou uma senha de privacidade com pelo menos 8 caracteres (até 72 bytes). A proteção vale para a conta em todos os dispositivos. Abrir, recarregar ou voltar à aba exige desbloqueio. Salve edições antes de sair da aba. A senha principal também desbloqueia o painel caso você esqueça o PIN. Para trocar ou desativar o bloqueio, confirme a senha principal nos ajustes.
+
+O banco guarda o hash do segredo de privacidade e o hash do token de cada navegador lembrado. A exportação financeira exclui essas credenciais. A autorização de desbloqueio fica na memória da página. O servidor verifica essa autorização antes de responder com dados financeiros ou gravar alterações.
+
+**Atualização de bancos existentes:** aplique `database/privacy.sql` no banco do Cifra pelo phpMyAdmin se a conta de serviço tiver permissões limitadas. No XAMPP com permissão de criação, a aplicação cria as duas tabelas automaticamente no primeiro uso autenticado. A migração preserva as contas e os lançamentos existentes.
+
 ## Usar os dados do Finance.html
 
 - A versão original e suas instruções estão preservadas na raiz. Os lançamentos da versão antiga pertencem ao navegador e ao perfil onde foram cadastrados.
