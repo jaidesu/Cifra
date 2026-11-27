@@ -85,7 +85,8 @@ function aplicarTema(){
   r.style.colorScheme = escuro ? 'dark' : 'light';
   const marca = $('marcaLateral'), arquivoMarca = escuro ? 'assets/marca/cifra-escuro.svg' : 'assets/marca/cifra-claro.svg';
   if (marca.getAttribute('src') !== arquivoMarca) marca.src = arquivoMarca;
-  $('btTema').textContent = escuro ? '☀️' : '🌙';
+  $('btTema').innerHTML = ico(escuro ? 'sun' : 'moon');
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', PAL.bg);
   if (temChart){ Chart.defaults.color = PAL.sub; Chart.defaults.borderColor = PAL.grade; Chart.defaults.font.family = FONTE; Chart.defaults.font.size = 12; }
 }
 /* ===================== PERÍODO (dia, semana, mês, ano, tudo, entre datas) ===================== */
@@ -130,7 +131,7 @@ function renderCaixinha(cxIni, sob, cxFim, usou, np){
   else if (sob > 0 && cxIni < 0){ nota = `Os ${fmt(sob)} que sobraram ${np} ajudaram a cobrir o que faltava de antes.`; tipo = 'aviso'; }
   else if (sob > 0){ nota = `Os ${fmt(sob)} que sobraram ${np} foram para a caixinha.`; tipo = 'ok'; }
   else nota = 'Nada entrou nem saiu da caixinha neste período.';
-  $('cxCard').innerHTML = `<h2>🐷 Caixinha</h2>
+  $('cxCard').innerHTML = `<h2>${ico('piggy-bank')}Caixinha</h2>
     <p class="sub">O que sobra fica guardado e passa para o período seguinte. Quando você gasta mais do que entra, a caixinha cobre a diferença.</p>
     <div class="cxl"><span>Veio de antes</span><b class="${cls(cxIni)}">${fmt(cxIni)}</b></div>
     <div class="cxl"><span>Resultado ${np}</span><b class="${cls(sob)}">${sob > 0 ? '+ ' : ''}${fmt(sob)}</b></div>
@@ -186,6 +187,11 @@ function diasPeriodo(L){
   }
   return Math.max(1, difDias(a,b)+1);
 }
+function escolherData(){
+  if (!['dia','semana','mes','ano'].includes(P.modo)) return;
+  const i = $('pIr');
+  try { i.showPicker(); } catch { i.focus(); }
+}
 function renderPeriodo(){
   document.querySelectorAll('#pModo button').forEach(b=>b.classList.toggle('sel', b.dataset.v === P.modo));
   const nav = ['dia','semana','mes','ano'].includes(P.modo);
@@ -194,6 +200,7 @@ function renderPeriodo(){
   $('pIrBox').style.display = nav ? 'flex' : 'none';
   $('pCustom').style.display = P.modo === 'custom' ? 'flex' : 'none';
   $('pLabel').textContent = rotuloPeriodo();
+  $('pLabel').disabled = !nav;
   $('pIr').value = P.ref; $('pDe').value = P.de; $('pAte').value = P.ate;
 }
 function mesesJanela(){
@@ -218,9 +225,11 @@ function dadosMeses(){
 
 /* ===================== PEÇAS DE LISTA ===================== */
 function catDe(l){
-  if (l.tipo === 'entrada') return {n:'Entrada', ic:'💰', cor:PAL.verde};
+  if (l.tipo === 'entrada') return {n:'Entrada', ic:'', svg:'arrow-down-left', cor:PAL.verde};
   return S.cats.find(c=>c.n === l.cat) || {n:l.cat, ic:'📦', cor:'#94a3b8'};
 }
+const bolaCat = (c, cls) => `<span class="bola ${cls||''}" style="background:${c.cor}22;color:${c.cor}">${c.svg ? ico(c.svg) : esc(c.ic)}</span>`;
+function abrirLinha(e, id){ if (!e.target.closest('button,a,input,select')) abrirForm(id); }
 function statusDe(l){
   if (l.tipo === 'entrada') return {txt:'', cls:''};
   if (l.pago) return {txt:'pago', cls:'ok'};
@@ -231,15 +240,15 @@ function statusDe(l){
 }
 function botoes(l){
   const d = esc(l.desc);
-  return (l.tipo === 'gasto' ? `<button class="ac ${l.pago?'feito':''}" title="${l.pago?'Desmarcar como pago':'Marcar como pago'}" aria-label="${l.pago?'Desmarcar':'Marcar'} ${d} como pago" onclick="alternarPago(${l.id})">✔</button>` : '') +
-    `<button class="ac" title="Editar" aria-label="Editar ${d}" onclick="abrirForm(${l.id})">✏️</button>` +
-    `<button class="ac" title="Duplicar" aria-label="Duplicar ${d}" onclick="duplicar(${l.id})">⧉</button>` +
-    `<button class="ac del" title="Apagar" aria-label="Apagar ${d}" onclick="excluir(${l.id})">✕</button>`;
+  return (l.tipo === 'gasto' ? `<button class="ac ac-pago ${l.pago?'feito':''}" title="${l.pago?'Desmarcar como pago':'Marcar como pago'}" aria-label="${l.pago?'Desmarcar':'Marcar'} ${d} como pago" aria-pressed="${!!l.pago}" onclick="alternarPago(${l.id})">${ico('check')}</button>` : '') +
+    `<button class="ac ac-extra" title="Editar" aria-label="Editar ${d}" onclick="abrirForm(${l.id})">${ico('pencil')}</button>` +
+    `<button class="ac ac-extra" title="Duplicar" aria-label="Duplicar ${d}" onclick="duplicar(${l.id})">${ico('copy')}</button>` +
+    `<button class="ac ac-extra del" title="Apagar" aria-label="Apagar ${d}" onclick="excluir(${l.id})">${ico('trash-2')}</button>`;
 }
 function linhaItem(l){
   const e = l.tipo === 'entrada', c = catDe(l), st = statusDe(l);
-  return `<div class="item ${!e && l.pago ? 'pago' : ''}">
-    <div class="bola" style="background:${c.cor}22">${esc(c.ic)}</div>
+  return `<div class="item toque ${!e && l.pago ? 'pago' : ''}" onclick="abrirLinha(event,${l.id})">
+    ${bolaCat(c)}
     <div class="meio"><div class="nome">${esc(l.desc)}</div>
       <div class="info"><span>${esc(c.n)}</span><span>${dBR(l.data)}</span>${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : ''}</div></div>
     <div class="valor ${e?'pos':'neg'}">${e?'+':'−'} ${fmt(l.valor)}</div>
@@ -248,9 +257,9 @@ function linhaItem(l){
 }
 function linhaTabela(l){
   const e = l.tipo === 'entrada', c = catDe(l), st = statusDe(l);
-  return `<div class="tr ${!e && l.pago ? 'pago' : ''}">
+  return `<div class="tr toque ${!e && l.pago ? 'pago' : ''}" onclick="abrirLinha(event,${l.id})">
     <span class="c-data">${dBR(l.data)}<small>${DIAS[deISO(l.data).getDay()]}</small></span>
-    <span class="c-desc"><span class="bola peq" style="background:${c.cor}22">${esc(c.ic)}</span><span class="tx"><b>${esc(l.desc)}</b><small class="soMob">${esc(c.n)}, ${dBR(l.data)}${st.txt ? ', '+st.txt : ''}</small></span></span>
+    <span class="c-desc">${bolaCat(c,'peq')}<span class="tx"><b>${esc(l.desc)}</b><small class="soMob">${esc(c.n)}, ${dBR(l.data)}${st.txt ? ', '+st.txt : ''}</small></span></span>
     <span class="c-cat">${esc(c.n)}</span>
     <span class="c-st">${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : '<span class="tag ok">entrada</span>'}</span>
     <span class="c-val ${e?'pos':'neg'}">${e?'+':'−'} ${fmt(l.valor)}</span>
@@ -338,9 +347,9 @@ function renderPainel(){
     ? pend.slice(0,6).map(l=>{
         const d = difDias(h, l.data);
         const q = d < 0 ? `<span class="tag ruim">atrasada há ${plural(-d,'dia','dias')}</span>` : d === 0 ? '<span class="tag aviso">vence hoje</span>' : `<span class="tag neutro">em ${plural(d,'dia','dias')}</span>`;
-        return `<div class="item"><div class="meio"><div class="nome">${esc(l.desc)}</div><div class="info"><span>${dBR(l.data)}</span>${q}</div></div>
+        return `<div class="item toque" onclick="abrirLinha(event,${l.id})"><div class="meio"><div class="nome">${esc(l.desc)}</div><div class="info"><span>${dBR(l.data)}</span>${q}</div></div>
           <div class="valor neg">${fmt(l.valor)}</div>
-          <div class="acoes"><button class="ac" title="Marcar como pago" aria-label="Marcar ${esc(l.desc)} como pago" onclick="alternarPago(${l.id})">✔</button></div></div>`;
+          <div class="acoes"><button class="ac ac-pago" title="Marcar como pago" aria-label="Marcar ${esc(l.desc)} como pago" onclick="alternarPago(${l.id})">${ico('check')}</button></div></div>`;
       }).join('') + (pend.length > 6 ? `<button class="link bloco" onclick="verPendentes()">Ver as ${pend.length} contas a pagar</button>` : '')
     : '<div class="vazio">Nenhuma conta esperando pagamento.</div>';
 
@@ -352,7 +361,7 @@ function renderPainel(){
   const ind = (r,v,s,cls) => `<div class="ind"><span>${r}</span><b class="${cls||''}">${v}</b><small>${s}</small></div>`;
   $('inds').innerHTML =
     ind('Taxa de economia', ent > 0 ? Math.round(sob/ent*100)+'%' : 'sem entrada', ent > 0 ? 'do que entrou ficou com você' : 'nada entrou no período', ent > 0 ? (sob<0?'neg':'pos') : '') +
-    ind('🐷 Caixinha no fim do período', fmt(acum), 'tudo o que sobrou até aqui', acum<0?'neg':'pos') +
+    ind(ico('piggy-bank')+'Caixinha no fim do período', fmt(acum), 'tudo o que sobrou até aqui', acum<0?'neg':'pos') +
     ind('Gasto médio por dia', fmt(r2(sai/dias)), `${plural(dias,'dia','dias')} no período`) +
     ind('Maior gasto', maior ? fmt(maior.valor) : 'nenhum', maior ? esc(maior.desc) : 'nada saiu no período') +
     ind('Categoria que mais pesou', top ? `${esc(top.ic)} ${esc(top.n)}` : 'nenhuma', top ? `${fmt(top.total)}, ${pct(top.total,sai)} dos gastos` : 'nada saiu no período') +
@@ -398,9 +407,15 @@ function renderLanc(){
   const L = filtrados();
   const ent = soma(L.filter(l=>l.tipo==='entrada')), sai = soma(L.filter(l=>l.tipo==='gasto')), sal = r2(ent-sai);
   const ind = (r,v,cls) => `<div class="ind"><span>${r}</span><b class="${cls||''}">${v}</b></div>`;
+  const ativos = ['qTipo','qCat','qStatus','qMin','qMax'].filter(id=>$(id).value.trim()).length;
+  $('nFiltros').textContent = ativos ? String(ativos) : '';
   $('lResumo').innerHTML = ind('Lançamentos na lista', String(L.length)) + ind('Entrou', fmt(ent), 'pos') + ind('Saiu', fmt(sai), 'neg') + ind('Saldo da lista', fmt(sal), sal<0?'neg':'pos');
   $('lTabela').innerHTML = '<div class="tr th"><span>Data</span><span>Descrição</span><span>Categoria</span><span>Situação</span><span class="c-val">Valor</span><span></span></div>' +
     (L.length ? L.map(linhaTabela).join('') : `<div class="vazio">Nenhum lançamento com esses filtros ${noPeriodo()}. Troque o período ou limpe os filtros.</div>`);
+}
+function alternarFiltros(){
+  const aberto = $('filtros').classList.toggle('aberto');
+  $('btFiltros').setAttribute('aria-expanded', String(aberto));
 }
 function limparFiltros(){
   ['qBusca','qTipo','qCat','qStatus','qMin','qMax'].forEach(id=>$(id).value = '');
@@ -578,7 +593,7 @@ function renderOrc(){
     if (l){ lim += l; gastoLim += g; }
     const p = l ? g/l*100 : 0, cls = !l ? '' : p >= 100 ? 'ruim' : p >= 80 ? 'aviso' : 'ok';
     return `<div class="card">
-      <div class="otop"><span class="bola" style="background:${c.cor}22">${esc(c.ic)}</span><b>${esc(c.n)}</b>
+      <div class="otop">${bolaCat(c)}<b>${esc(c.n)}</b>
         <label class="olim">Limite em R$ <input inputmode="decimal" value="${l ? String(l).replace('.',',') : ''}" placeholder="sem limite" onchange="defOrc(${i},this.value)"></label></div>
       <div class="onum"><span>Gasto no mês: <b>${fmt(g)}</b></span><span>${l ? (g <= l ? `Ainda cabe <b class="pos">${fmt(r2(l-g))}</b>` : `Passou <b class="neg">${fmt(r2(g-l))}</b>`) : 'Sem limite definido'}</span></div>
       <div class="trilho"><span style="width:${Math.min(p,100)}%;background:${cls==='ruim' ? 'var(--verm)' : cls==='aviso' ? 'var(--amar)' : c.cor}"></span></div>
@@ -594,27 +609,27 @@ function renderOrc(){
 let NOTIFS = [];
 function calcNotif(includeDismissed=false){
   const h = hojeISO(), c = S.cfg, N = [];
-  if (S.migradoDe) N.push({k:'migr', ic:'📅', cls:'info', tit:'Seus lançamentos ganharam data completa',
+  if (S.migradoDe) N.push({k:'migr', ic:'calendar', cls:'info', tit:'Seus lançamentos ganharam data completa',
     txt:`O que era de Dezembro a Maio ficou de dez/${S.anoMigracao} a mai/${S.anoMigracao+1}. O que não tinha dia ficou no dia 1. Se o ano estiver errado, dá para mover tudo em Ajustes, parte Dados.`,
     btn:['Abrir Ajustes', "abrir('ajustes')"]});
   if (c.avVenc) S.lanc.filter(l=>l.tipo==='gasto' && !l.pago).sort((a,b)=>a.data.localeCompare(b.data)).forEach(l=>{
     const d = difDias(h, l.data), pagar = ['Marcar como pago', `alternarPago(${l.id})`];
-    if (d < 0) N.push({k:`atr:${l.id}:${l.data}`, ic:'⚠️', cls:'ruim', tit:`Venceu: ${l.desc}`, txt:`${fmt(l.valor)}, venceu em ${dBR(l.data)}, há ${plural(-d,'dia','dias')}.`, btn:pagar});
-    else if (d === 0) N.push({k:`hoje:${l.id}:${l.data}`, ic:'⏰', cls:'aviso', tit:`Vence hoje: ${l.desc}`, txt:fmt(l.valor), btn:pagar});
-    else if (d <= c.diasAviso) N.push({k:`prox:${l.id}:${l.data}`, ic:'🗓️', cls:'aviso', tit:`Vence em ${plural(d,'dia','dias')}: ${l.desc}`, txt:`${fmt(l.valor)}, no dia ${dBR(l.data)}.`, btn:pagar});
+    if (d < 0) N.push({k:`atr:${l.id}:${l.data}`, ic:'triangle-alert', cls:'ruim', tit:`Venceu: ${l.desc}`, txt:`${fmt(l.valor)}, venceu em ${dBR(l.data)}, há ${plural(-d,'dia','dias')}.`, btn:pagar});
+    else if (d === 0) N.push({k:`hoje:${l.id}:${l.data}`, ic:'alarm-clock', cls:'aviso', tit:`Vence hoje: ${l.desc}`, txt:fmt(l.valor), btn:pagar});
+    else if (d <= c.diasAviso) N.push({k:`prox:${l.id}:${l.data}`, ic:'calendar-clock', cls:'aviso', tit:`Vence em ${plural(d,'dia','dias')}: ${l.desc}`, txt:`${fmt(l.valor)}, no dia ${dBR(l.data)}.`, btn:pagar});
   });
   const ym = h.slice(0,7), doMes = S.lanc.filter(l=>l.data.startsWith(ym));
   if (c.avOrc) S.cats.forEach(cat=>{
     const lim = +S.orc[cat.n] || 0; if (!lim) return;
     const g = soma(doMes.filter(l=>l.tipo==='gasto' && l.cat===cat.n)), p = g/lim*100;
-    if (p >= 100) N.push({k:`orc100:${cat.n}:${ym}`, ic:'🚨', cls:'ruim', tit:`${cat.n} passou do limite`, txt:`Gasto de ${fmt(g)} para um limite de ${fmt(lim)} neste mês.`});
-    else if (p >= 80) N.push({k:`orc80:${cat.n}:${ym}`, ic:'🎯', cls:'aviso', tit:`${cat.n} chegou a ${Math.round(p)}% do limite`, txt:`Gasto de ${fmt(g)} de ${fmt(lim)} neste mês.`});
+    if (p >= 100) N.push({k:`orc100:${cat.n}:${ym}`, ic:'octagon-alert', cls:'ruim', tit:`${cat.n} passou do limite`, txt:`Gasto de ${fmt(g)} para um limite de ${fmt(lim)} neste mês.`});
+    else if (p >= 80) N.push({k:`orc80:${cat.n}:${ym}`, ic:'target', cls:'aviso', tit:`${cat.n} chegou a ${Math.round(p)}% do limite`, txt:`Gasto de ${fmt(g)} de ${fmt(lim)} neste mês.`});
   });
   if (c.avSaldo){
     const e = soma(doMes.filter(l=>l.tipo==='entrada')), g = soma(doMes.filter(l=>l.tipo==='gasto'));
     const cx = caixinhaAntes(ym+'-01'), falta = r2(g-e-cx), mes = MESN[+ym.slice(5,7)-1];
-    if (falta > 0) N.push({k:`saldo:${ym}`, ic:'📉', cls:'ruim', tit:`${mes} está no vermelho`, txt:`Saiu ${fmt(g)}, entrou ${fmt(e)} e a caixinha começou o mês com ${fmt(cx)}. Faltam ${fmt(falta)}.`});
-    else if (g > e) N.push({k:`cx:${ym}`, ic:'🐷', cls:'info', tit:`A caixinha está cobrindo ${mes}`, txt:`Saiu ${fmt(r2(g-e))} a mais do que entrou. A caixinha cobre e ainda fica com ${fmt(r2(-falta))}.`});
+    if (falta > 0) N.push({k:`saldo:${ym}`, ic:'trending-down', cls:'ruim', tit:`${mes} está no vermelho`, txt:`Saiu ${fmt(g)}, entrou ${fmt(e)} e a caixinha começou o mês com ${fmt(cx)}. Faltam ${fmt(falta)}.`});
+    else if (g > e) N.push({k:`cx:${ym}`, ic:'piggy-bank', cls:'info', tit:`A caixinha está cobrindo ${mes}`, txt:`Saiu ${fmt(r2(g-e))} a mais do que entrou. A caixinha cobre e ainda fica com ${fmt(r2(-falta))}.`});
   }
 
   if (includeDismissed) return N;
@@ -626,9 +641,9 @@ function renderNotif(){
   const b = $('nBadge'); b.textContent = NOTIFS.length; b.style.display = NOTIFS.length ? 'grid' : 'none';
   $('btSino').setAttribute('aria-label', `Notificações, ${plural(NOTIFS.length,'aviso','avisos')}`);
   $('notif').innerHTML = `<div class="nTop"><b>Notificações</b>${NOTIFS.length ? '<button class="link" onclick="dispensarTudo()">Dispensar todas</button>' : ''}</div>` +
-    (NOTIFS.length ? NOTIFS.map((n,i)=>`<div class="nItem ${n.cls}"><span class="nIc">${n.ic}</span>
+    (NOTIFS.length ? NOTIFS.map((n,i)=>`<div class="nItem ${n.cls}"><span class="nIc">${ico(n.ic)}</span>
         <div class="nTx"><b>${esc(n.tit)}</b><small>${esc(n.txt)}</small>${n.btn ? `<button class="link" onclick="${n.btn[1]}">${n.btn[0]}</button>` : ''}</div>
-        <button class="ac" title="Dispensar" aria-label="Dispensar aviso" onclick="dispensar(${i})">✕</button></div>`).join('')
+        <button class="ac" title="Dispensar" aria-label="Dispensar aviso" onclick="dispensar(${i})">${ico('x')}</button></div>`).join('')
       : '<div class="vazio">Tudo em dia. Nenhum aviso agora.</div>');
 }
 function alternarNotif(e){ e.stopPropagation(); $('notif').classList.toggle('on'); }
@@ -654,6 +669,7 @@ function abrirForm(id, copia){
   $('fRep').value = '1';
   $('fBlocoRep').style.display = F.id ? 'none' : 'block';
   $('fDel').style.display = F.id ? 'inline-flex' : 'none';
+  $('fDup').style.display = F.id ? 'inline-flex' : 'none';
   $('fMsg').textContent = '';
   if (!l) F.pago = $('fData').value <= hojeISO();
   pintarForm();
@@ -675,6 +691,7 @@ function pintarForm(){
 }
 function fCat(i){ if (F && S.cats[i]){ F.cat = S.cats[i].n; $('fMsg').textContent = ''; pintarForm(); } }
 function apagarDoForm(){ const id = F && F.id; fecharForm(); if (id) excluir(id); }
+function duplicarDoForm(){ const id = F && F.id; if (id) abrirForm(id, true); }
 const inicial = () => (S.perfil.nome.trim()[0] || '?').toUpperCase();
 const avatarTxt = () => S.perfil.avatar === 'inicial' ? inicial() : S.perfil.avatar;
 function saudacao(){
@@ -697,7 +714,7 @@ function renderCats(){
       <input value="${esc(c.n)}" maxlength="24" aria-label="Nome da categoria" onchange="edCat(${i},'n',this.value)">
       <input type="color" value="${esc(c.cor)}" aria-label="Cor de ${esc(c.n)}" onchange="edCat(${i},'cor',this.value)">
       <small>${n} lanç.</small>
-      <button class="ac del" title="Apagar categoria" aria-label="Apagar ${esc(c.n)}" onclick="delCat(${i})">✕</button></div>`;
+      <button class="ac del" title="Apagar categoria" aria-label="Apagar ${esc(c.n)}" onclick="delCat(${i})">${ico('trash-2')}</button></div>`;
   }).join('');
   preencherSelects();
 }

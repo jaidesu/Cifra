@@ -88,9 +88,11 @@
   /* ---------- barra de período ---------- */
   .periodo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:10px 12px;margin-bottom:14px}
   .pnav{display:flex;align-items:center;gap:6px}
-  .seta{width:38px;height:38px;border-radius:10px;border:1px solid var(--borda);background:var(--card2);font-size:18px;line-height:1}
+  .seta{width:38px;height:38px;border-radius:10px;border:1px solid var(--borda);background:var(--card2);font-size:18px;line-height:1;display:grid;place-items:center}
   .seta:hover{border-color:var(--sub)}
-  .plabel{font-weight:700;font-size:17px;min-width:210px;text-align:center}
+  .plabel{font-weight:700;font-size:17px;min-width:210px;text-align:center;background:none;border:1px solid transparent;border-radius:10px;padding:7px 8px;color:var(--txt)}
+  .plabel:not(:disabled):hover{border-color:var(--borda)}
+  .plabel:disabled{cursor:default}
   .pextra{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:14px}
   .pextra input{width:auto;padding:9px 10px}
   .pextra .btn{padding:9px 14px}
@@ -106,15 +108,21 @@
   .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 
   /* abas com os números grandes: clicar troca a lista de baixo */
-  .balanco{background:var(--card);border:1px solid var(--borda);border-radius:14px;overflow:hidden}
+  .balanco{background:var(--card);border:1px solid var(--borda);border-radius:14px;overflow:hidden;container-type:inline-size}
   .abas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
   .kpi{text-align:left;background:var(--card2);border:none;border-right:1px solid var(--borda);border-bottom:1px solid var(--borda);padding:18px 20px 16px;min-width:0}
   .kpi:last-child{border-right:none}
-  .kpi span{display:block}
+  .kpi>span,.kpi .barra span{display:block}
   .kpi:hover{background:var(--card)}
   .kpi.sel{background:var(--card);border-bottom-color:transparent;box-shadow:inset 0 3px 0 var(--ac)}
-  .kr{color:var(--sub);font-size:14px;font-weight:600}
-  .kpi .num{font-size:clamp(22px,2.1vw,32px);font-weight:800;letter-spacing:-.8px;margin:6px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .kr{display:flex!important;align-items:center;gap:6px;color:var(--sub);font-size:14px;font-weight:600}
+  .kpi .num{font-size:clamp(20px,2.6cqi,32px);font-weight:800;letter-spacing:-.8px;margin:6px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Quatro colunas só quando os valores cabem; senão, 2 × 2. */
+  @container (max-width:900px){
+    .abas{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kpi:nth-child(2){border-right:none}
+    .kpi .num{font-size:clamp(20px,4.6cqi,30px)}
+  }
   .kpi .mini{color:var(--sub);font-size:13px;min-height:19px}
   .kpi .mini b{font-weight:700}
   .kpi .barra{height:6px;background:var(--borda);border-radius:6px;overflow:hidden;margin-top:8px}
@@ -260,9 +268,6 @@
     .plabel{min-width:150px;font-size:16px}
   }
   @media(max-width:760px){
-    .abas{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .kpi:nth-child(2){border-right:none}
-    .kpi .num{font-size:24px}
     .rosca{grid-template-columns:minmax(0,1fr)}
     .tr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"desc val" "desc ac";row-gap:2px;padding:11px 14px}
     .tr.th,.c-data,.c-cat,.c-st{display:none}
@@ -274,3 +279,106 @@
     h1{font-size:22px}
   }
   @media(prefers-reduced-motion:reduce){ *{transition:none!important} }
+
+  /* ---------- ícones (Lucide) ---------- */
+  svg.i{display:block;width:1.15em;height:1.15em;flex-shrink:0}
+  .ico{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .btn svg.i{width:18px;height:18px}
+  .nv .ic{display:inline-flex;justify-content:center;width:22px}
+  .nv .ic svg{width:20px;height:20px}
+  .icb svg{width:20px;height:20px}
+  .ac{display:inline-grid;place-items:center;min-width:34px;min-height:34px}
+  .ac svg{width:18px;height:18px}
+  .seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .seg button svg{width:16px;height:16px}
+  .card>h2{display:flex;align-items:center;gap:8px}
+  .card>h2 svg{width:20px;height:20px;color:var(--acfg)}
+  .bola svg{width:20px;height:20px}
+  .bola.peq svg{width:16px;height:16px}
+  .kr svg{width:16px;height:16px}
+  .ind span svg.i{display:inline-block;vertical-align:-3px;margin-right:5px;width:15px;height:15px}
+  .nIc{display:grid;place-items:center;padding-top:1px;color:var(--acfg)}
+  .nIc svg{width:20px;height:20px}
+  .nItem.ruim .nIc{color:var(--verm)}
+  .nItem.aviso .nIc{color:var(--amar)}
+  .toque{cursor:pointer}
+  .toque:hover .nome,.toque:hover .c-desc b{color:var(--acfg)}
+  .fab,.btFiltros{display:none}
+  .filtrosMais{display:contents}
+  #nFiltros:not(:empty){display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--ac);color:var(--actx);font-size:12px}
+  .mdBase .btn.sec svg{width:16px;height:16px}
+  body.privado #workspace{filter:blur(24px)}
+
+  @media(max-width:980px){
+    .baixo .ic svg{width:22px;height:22px}
+  }
+
+  /* ---------- celular ---------- */
+  @media(max-width:760px){
+    input,select{font-size:16px}
+    main{padding:12px 12px calc(150px + env(safe-area-inset-bottom))}
+    .card{padding:16px}
+    h1{font-size:21px}
+    .topo{flex-wrap:nowrap;gap:10px;margin-bottom:12px}
+    .titulo{min-width:0}
+    .titulo h1,.oi{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .oi{font-size:12.5px}
+    .dir{gap:6px;position:static}
+    .dir .lancar{display:none}
+    .icb{width:42px;height:42px}
+    .notif{position:fixed;top:64px;left:10px;right:10px;width:auto;max-height:70vh}
+    .fab{display:grid;place-items:center;position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:18px;border:none;background:var(--ac);color:var(--actx);box-shadow:var(--sombra);z-index:25}
+    .fab svg{width:26px;height:26px}
+    .toast{bottom:calc(146px + env(safe-area-inset-bottom))}
+
+    .periodo{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px}
+    #pModo{grid-column:1/-1;display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+    #pModo::-webkit-scrollbar{display:none}
+    #pModo button{flex:1 0 auto;padding:8px 7px;font-size:14px}
+    .pnav{min-width:0}
+    .plabel{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .seta{width:40px;height:40px;flex-shrink:0}
+    .pIrRot{display:none}
+    #pIr{position:absolute;left:50%;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+    #pIrBox .btn{padding:10px 14px}
+    #pCustom{grid-column:1/-1;flex-wrap:wrap}
+    #pCustom input{flex:1 1 120px}
+
+    .kpi{padding:14px 14px 12px}
+    .kr{font-size:13px}
+    .listaBox{padding:14px}
+    .inds{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .ind{padding:12px 14px}
+    .ind b{font-size:16px}
+    .ind small{white-space:normal}
+
+    .item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"bola meio valor" "bola meio acoes";column-gap:10px;row-gap:0;align-items:center}
+    .item>.bola{grid-area:bola;width:36px;height:36px;font-size:17px}
+    .item>.meio{grid-area:meio}
+    .item>.valor{grid-area:valor;text-align:right}
+    .item>.acoes{grid-area:acoes;justify-self:end}
+    .info{gap:4px 8px;font-size:12.5px}
+    .ac-extra{display:none}
+    .ac{min-width:40px;min-height:40px}
+
+    .filtros{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:12px}
+    .btFiltros{display:inline-flex;padding:10px 14px}
+    .filtrosMais{display:none;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .filtros.aberto .filtrosMais{display:grid}
+    .filtrosMais .btn{grid-column:1/-1}
+
+    .otop{flex-wrap:wrap}
+    .olim{flex:1 1 100%}
+    .olim input{flex:1;width:auto}
+
+    .fundo{padding:0;align-items:flex-end}
+    .modal{max-height:94vh;max-height:94dvh;overflow-y:auto;border-radius:20px 20px 0 0;border-bottom:none;padding:18px 16px 0}
+    #fCats .chip{padding:7px 10px}
+    .mdBase{position:sticky;bottom:0;flex-wrap:wrap;background:var(--card);margin:12px -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--borda)}
+    .mdBase .btn:last-child{order:-1;flex:1 1 100%;min-width:0;margin-left:0}
+    .mdBase .btn.sec{flex:1}
+
+    .chartbox{height:260px}
+    .chartbox.peq{height:230px}
+    th,td{padding:8px 10px}
+  }

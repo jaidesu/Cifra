@@ -24,7 +24,8 @@ function signedUser(): ?array {
     if (!isset($_SESSION['uid'])) return null;
     if (time()-$_SESSION['last'] >= 1800 || time()-$_SESSION['start'] >= 43200) {
         session_regenerate_id(true);
-        $_SESSION = ['csrf'=>bin2hex(random_bytes(32))];
+        // The page keeps its token, so it can still sign out or resume the remembered browser.
+        $_SESSION = ['csrf'=>$_SESSION['csrf'] ?? bin2hex(random_bytes(32))];
         return null;
     }
     $user = query("SELECT id,name,email FROM users WHERE id=? AND status='active'",[$_SESSION['uid']])->fetch();
@@ -63,7 +64,9 @@ function login(array $input): array {
     $protected = panelHash($uid) !== '';
     if (($input['remember'] ?? false) === true) rememberDevice($uid);
     beginLogin($uid);
-    return ['user'=>signedUser(),'csrf'=>$_SESSION['csrf'],'protected'=>$protected];
+    // The account password also unlocks the panel, so a fresh login does not ask for the PIN.
+    return ['user'=>signedUser(),'csrf'=>$_SESSION['csrf'],'protected'=>$protected,
+        'proof'=>$protected ? panelProof(panelHash($uid)) : ''];
 }
 
 function dispatch(): array {
@@ -88,6 +91,12 @@ function dispatch(): array {
     }
     $hash = $user ? panelHash((int)$user['id']) : '';
     if ($method === 'GET' && $route === 'auth/me') return ['user'=>$user,'csrf'=>$_SESSION['csrf'],'protected'=>$hash !== '','setup'=>!$user && ownerNeeded()];
+    if ($route === 'auth/logout' && $method === 'POST') {
+        if (!hash_equals($_SESSION['csrf'],$_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) throw new ApiError(403,'CSRF','Atualize a página e tente novamente.');
+        forgetDevice();
+        clearSession();
+        return [];
+    }
     if (!$user && !in_array($route,['auth/login','auth/register','setup/owner'],true)) expired();
     $uid = (int)($user['id'] ?? 0);
     if ($hash !== '' && !in_array($route,['auth/unlock','auth/logout','auth/login'],true)
@@ -115,7 +124,6 @@ function dispatch(): array {
     if ($route === 'auth/login') return login($input);
     if ($route === 'auth/unlock' && $hash !== '') return unlockPanel($uid,$hash,$input);
     if ($route === 'auth/privacy') return configurePanel($uid,$input);
-    if ($route === 'auth/logout') { forgetDevice(); clearSession(); return []; }
     return transaction(function () use ($uid,$route,$input) {
         $account = query('SELECT revision,next_id FROM users WHERE id=? FOR UPDATE',[$uid])->fetch();
         if (($input['revision'] ?? null) !== (int)$account['revision']) {

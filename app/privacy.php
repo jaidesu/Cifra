@@ -15,6 +15,8 @@ function accessQuery(string $sql, array $args): PDOStatement {
     }
 }
 
+const REMEMBER_DAYS = 60;
+
 function rememberName(): string { return session_name().'_device'; }
 
 function rememberCookie(string $token, int $expires): void {
@@ -33,7 +35,7 @@ function forgetDevice(): void {
 
 function rememberDevice(int $uid): void {
     $token = bin2hex(random_bytes(32));
-    $expires = time()+30*86400;
+    $expires = time()+REMEMBER_DAYS*86400;
     accessQuery('DELETE FROM remembered_devices WHERE expires_at<=?',[time()]);
     accessQuery('INSERT INTO remembered_devices(token_hash,user_id,expires_at) VALUES (?,?,?)',
         [hash('sha256',$token),$uid,$expires]);
@@ -45,13 +47,23 @@ function beginLogin(int $uid): void {
     $_SESSION = ['uid'=>$uid,'start'=>time(),'last'=>time(),'csrf'=>bin2hex(random_bytes(32))];
 }
 
+function rememberedUser(): int {
+    $token = $_COOKIE[rememberName()] ?? '';
+    if (!is_string($token) || !preg_match('/^[0-9a-f]{64}$/D',$token)) return 0;
+    return (int)accessQuery("SELECT d.user_id FROM remembered_devices d JOIN users u ON u.id=d.user_id
+        WHERE d.token_hash=? AND d.expires_at>? AND u.status='active'",[hash('sha256',$token),time()])->fetchColumn();
+}
+
+// Each visit renews the remembered browser, so regular use never asks for the password again.
 function resumeDevice(): void {
     $token = $_COOKIE[rememberName()] ?? '';
-    if (!is_string($token) || !preg_match('/^[0-9a-f]{64}$/D',$token)) return;
-    $uid = accessQuery("SELECT d.user_id FROM remembered_devices d JOIN users u ON u.id=d.user_id
-        WHERE d.token_hash=? AND d.expires_at>? AND u.status='active'",[hash('sha256',$token),time()])->fetchColumn();
-    if ($uid) beginLogin((int)$uid);
-    else forgetDevice();
+    if (!is_string($token) || $token === '') return;
+    $uid = rememberedUser();
+    if (!$uid) { forgetDevice(); return; }
+    $expires = time()+REMEMBER_DAYS*86400;
+    accessQuery('UPDATE remembered_devices SET expires_at=? WHERE token_hash=?',[$expires,hash('sha256',$token)]);
+    rememberCookie($token,$expires);
+    beginLogin($uid);
 }
 
 function panelHash(int $uid): string {
@@ -94,6 +106,8 @@ function configurePanel(int $uid,array $input): array {
         if (!$valid) invalid('Use pelo menos 6 dígitos no PIN ou 8 caracteres na senha (até 72 bytes).');
         $hash = password_hash($secret,PASSWORD_DEFAULT);
         accessQuery('INSERT INTO panel_locks(user_id,secret_hash) VALUES (?,?) ON DUPLICATE KEY UPDATE secret_hash=?',[$uid,$hash,$hash]);
+        // With a PIN, this browser stays signed in and only the PIN is asked when the app opens.
+        if (rememberedUser() !== $uid) rememberDevice($uid);
     }
     query('DELETE FROM login_attempts WHERE bucket=?',[$key]);
     return ['enabled'=>$secret!=='','proof'=>$secret!=='' ? panelProof($hash) : ''];

@@ -3,7 +3,8 @@
 <head>
 <?php if (isset($publicBase)): ?><base href="public/"><?php endif; ?>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070707">
 <title>Cifra · Finanças pessoais</title>
 <link rel="icon" href="assets/marca/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml" sizes="any">
@@ -12,6 +13,7 @@
 <link rel="stylesheet" href="assets/finance.css">
 <link rel="stylesheet" href="assets/session.css">
 <script defer src="assets/chart.umd.js"></script>
+<script defer src="assets/icons.js"></script>
 <script defer src="assets/finance.js"></script>
 <script defer src="assets/backup.js"></script>
 <script defer src="assets/account.js"></script>
@@ -25,15 +27,18 @@
       <div id="nameGroup" hidden><label for="ownerName">Seu nome</label><input id="ownerName" maxlength="30" autocomplete="name"></div>
       <label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required maxlength="190">
       <label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required>
-      <label class="remember"><input type="checkbox" id="remember"> Lembrar de mim por 30 dias neste navegador</label>
+      <label class="remember"><input type="checkbox" id="remember" checked> Manter conectado neste aparelho</label>
       <button class="btn" id="enter">Entrar</button>
     </form>
-    <form id="unlockForm" hidden>
-      <label for="unlockSecret">PIN de privacidade ou senha</label>
-      <input id="unlockSecret" type="password" autocomplete="off" required>
-      <p class="sub">Você também pode usar a senha da conta.</p>
-      <button class="btn" id="unlockButton">Desbloquear painel</button>
-      <button class="link" type="button" onclick="sair()">Sair da conta</button>
+    <form id="unlockForm" data-mode="pin" hidden>
+      <p class="sub">Digite seu PIN para abrir o Cifra.</p>
+      <label for="unlockSecret" id="unlockLabel">PIN</label>
+      <input id="unlockSecret" class="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="72" required>
+      <button class="btn" id="unlockButton"><span data-i="lock"></span>Desbloquear</button>
+      <div class="unlock-links">
+        <button class="link" type="button" id="unlockMode">Usar a senha da conta</button>
+        <button class="link" type="button" onclick="sair()">Sair da conta</button>
+      </div>
     </form>
     <p id="loginStatus" role="status">Verificando sua sessão…</p>
     <div class="access-switch" id="accessSwitchBox">
@@ -53,27 +58,27 @@
       <span class="pf"><b id="sNome"></b><small>Perfil e ajustes</small></span>
     </button>
     <nav class="menu" aria-label="Seções">
-      <button class="nv ativa" data-pg="painel" onclick="abrir('painel')"><span class="ic">📊</span>Painel</button>
-      <button class="nv" data-pg="lanc" onclick="abrir('lanc')"><span class="ic">📋</span>Lançamentos</button>
-      <button class="nv" data-pg="graficos" onclick="abrir('graficos')"><span class="ic">📈</span>Gráficos e números</button>
-      <button class="nv" data-pg="orc" onclick="abrir('orc')"><span class="ic">🎯</span>Orçamentos</button>
-      <button class="nv" data-pg="ajustes" onclick="abrir('ajustes')"><span class="ic">⚙️</span>Ajustes</button>
+      <button class="nv ativa" data-pg="painel" onclick="abrir('painel')"><span class="ic" data-i="layout-dashboard"></span>Painel</button>
+      <button class="nv" data-pg="lanc" onclick="abrir('lanc')"><span class="ic" data-i="receipt-text"></span>Lançamentos</button>
+      <button class="nv" data-pg="graficos" onclick="abrir('graficos')"><span class="ic" data-i="chart-line"></span>Gráficos e números</button>
+      <button class="nv" data-pg="orc" onclick="abrir('orc')"><span class="ic" data-i="target"></span>Orçamentos</button>
+      <button class="nv" data-pg="ajustes" onclick="abrir('ajustes')"><span class="ic" data-i="settings"></span>Ajustes</button>
     </nav>
     <div class="ladoBase">
-      <button class="btn" onclick="abrirForm()">＋ Lançar</button>
+      <button class="btn" onclick="abrirForm()"><span data-i="plus"></span>Lançar</button>
       <small>Seus dados ficam salvos na sua conta.</small>
     </div>
   </aside>
 
   <main><div class="conteudo">
     <header class="topo">
-      <button type="button" class="btn sec" id="menuToggle" aria-controls="sideMenu bottomMenu" aria-expanded="true">Recolher menu</button>
+      <button type="button" class="icb" id="menuToggle" aria-controls="sideMenu bottomMenu" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu"></button>
       <img class="marca-compacta" src="assets/marca/favicon.svg" width="32" height="32" alt="Cifra">
-      <div><div class="oi" id="oi"></div><h1 id="tituloPg">Painel</h1></div>
+      <div class="titulo"><div class="oi" id="oi"></div><h1 id="tituloPg">Painel</h1></div>
       <div class="dir">
-        <button class="btn" onclick="abrirForm()">＋ Lançar</button>
-        <button class="icb" id="btSino" onclick="alternarNotif(event)" aria-label="Notificações" title="Notificações">🔔<span class="badge" id="nBadge"></span></button>
-        <button class="icb" id="btTema" onclick="trocarTema()" aria-label="Trocar entre tema claro e escuro" title="Tema claro ou escuro">☀️</button>
+        <button class="btn lancar" onclick="abrirForm()"><span data-i="plus"></span>Lançar</button>
+        <button class="icb" id="btSino" onclick="alternarNotif(event)" aria-label="Notificações" title="Notificações"><span data-i="bell"></span><span class="badge" id="nBadge"></span></button>
+        <button class="icb" id="btTema" onclick="trocarTema()" aria-label="Trocar entre tema claro e escuro" title="Tema claro ou escuro"></button>
         <div class="notif" id="notif"></div>
       </div>
     </header>
@@ -84,12 +89,12 @@
         <button data-v="ano">Ano</button><button data-v="tudo">Tudo</button><button data-v="custom">Entre datas</button>
       </div>
       <div class="pnav" id="pNav">
-        <button class="seta" onclick="moverPeriodo(-1)" aria-label="Período anterior">‹</button>
-        <div class="plabel" id="pLabel"></div>
-        <button class="seta" onclick="moverPeriodo(1)" aria-label="Próximo período">›</button>
+        <button class="seta" onclick="moverPeriodo(-1)" aria-label="Período anterior"><span data-i="chevron-left"></span></button>
+        <button type="button" class="plabel" id="pLabel" onclick="escolherData()" title="Escolher uma data"></button>
+        <button class="seta" onclick="moverPeriodo(1)" aria-label="Próximo período"><span data-i="chevron-right"></span></button>
       </div>
       <div class="pextra" id="pIrBox">
-        <label for="pIr">Ir para</label><input type="date" id="pIr" onchange="irPara(this.value)">
+        <label for="pIr" class="pIrRot">Ir para</label><input type="date" id="pIr" onchange="irPara(this.value)">
         <button class="btn sec" onclick="irHoje()">Hoje</button>
       </div>
       <div class="pextra" id="pCustom">
@@ -103,10 +108,10 @@
       <div class="duasCol">
         <div class="balanco" id="blocoLista">
           <div class="abas">
-            <button class="kpi" data-v="entrada" onclick="verNoPainel('entrada')"><span class="kr">💰 Entrou</span><span class="num pos" id="kEnt"></span><span class="mini" id="kEntM"></span></button>
-            <button class="kpi" data-v="gasto" onclick="verNoPainel('gasto')"><span class="kr">💸 Saiu</span><span class="num neg" id="kSai"></span><span class="mini" id="kSaiM"></span></button>
-            <button class="kpi" data-v="tudo" onclick="verNoPainel('tudo')"><span class="kr">✅ Sobrou</span><span class="num" id="kSob"></span><span class="mini" id="kSobM"></span></button>
-            <button class="kpi" data-v="pendente" onclick="verNoPainel('pendente')"><span class="kr">⏳ Falta pagar</span><span class="num" id="kFal"></span><span class="mini" id="kFalM"></span><span class="barra"><span id="kBar"></span></span></button>
+            <button class="kpi" data-v="entrada" onclick="verNoPainel('entrada')"><span class="kr"><span class="pos" data-i="arrow-down-left"></span>Entrou</span><span class="num pos" id="kEnt"></span><span class="mini" id="kEntM"></span></button>
+            <button class="kpi" data-v="gasto" onclick="verNoPainel('gasto')"><span class="kr"><span class="neg" data-i="arrow-up-right"></span>Saiu</span><span class="num neg" id="kSai"></span><span class="mini" id="kSaiM"></span></button>
+            <button class="kpi" data-v="tudo" onclick="verNoPainel('tudo')"><span class="kr"><span data-i="wallet"></span>Sobrou</span><span class="num" id="kSob"></span><span class="mini" id="kSobM"></span></button>
+            <button class="kpi" data-v="pendente" onclick="verNoPainel('pendente')"><span class="kr"><span data-i="hourglass"></span>Falta pagar</span><span class="num" id="kFal"></span><span class="mini" id="kFalM"></span><span class="barra"><span id="kBar"></span></span></button>
           </div>
           <div class="listaBox">
             <div class="cab"><h2 id="lTit"></h2><span class="sub" id="lSub"></span></div>
@@ -125,8 +130,10 @@
 
     <!-- ===== LANÇAMENTOS ===== -->
     <section class="pg" id="pg-lanc">
-      <div class="card filtros">
+      <div class="card filtros" id="filtros">
         <input id="qBusca" type="search" placeholder="Buscar por descrição ou categoria" aria-label="Buscar" oninput="renderLanc()">
+        <button type="button" class="btn sec btFiltros" id="btFiltros" onclick="alternarFiltros()" aria-expanded="false" aria-controls="filtrosMais"><span data-i="sliders-horizontal"></span>Filtros<b id="nFiltros"></b></button>
+        <div class="filtrosMais" id="filtrosMais">
         <select id="qTipo" aria-label="Tipo" onchange="renderLanc()">
           <option value="">Entradas e gastos</option><option value="entrada">Só entradas</option><option value="gasto">Só gastos</option>
         </select>
@@ -141,6 +148,7 @@
           <option value="valD">Valor, do maior</option><option value="valA">Valor, do menor</option><option value="desc">Descrição, de A a Z</option>
         </select>
         <button class="btn sec" onclick="limparFiltros()">Limpar filtros</button>
+        </div>
       </div>
       <div class="inds" id="lResumo"></div>
       <div class="card semPad"><div id="lTabela"></div></div>
@@ -158,7 +166,7 @@
       <div class="card"><h2>Entrou e saiu, mês a mês</h2><p class="sub" id="gSubMes"></p><div class="chartbox"><canvas id="chMes"></canvas></div></div>
       <div class="g2">
         <div class="card"><h2>Quanto sobrou em cada mês</h2><p class="sub">Verde é mês que fechou no positivo, vermelho é mês que faltou.</p><div class="chartbox"><canvas id="chSob"></canvas></div></div>
-        <div class="card"><h2>🐷 Caixinha no fim de cada mês</h2><p class="sub">Quanto ficou guardado ao fechar cada mês: as sobras entram, os meses que faltou dinheiro saem dela.</p><div class="chartbox"><canvas id="chAcum"></canvas></div></div>
+        <div class="card"><h2>Caixinha no fim de cada mês</h2><p class="sub">Quanto ficou guardado ao fechar cada mês: as sobras entram, os meses que faltou dinheiro saem dela.</p><div class="chartbox"><canvas id="chAcum"></canvas></div></div>
       </div>
       <div class="g2">
         <div class="card"><h2>Dia a dia</h2><p class="sub" id="gSubDia"></p>
@@ -180,31 +188,31 @@
     <!-- ===== AJUSTES ===== -->
     <section class="pg" id="pg-ajustes">
       <div class="g2">
-        <div class="card"><h2>👤 Perfil</h2><p class="sub">Como o sistema chama você.</p>
+        <div class="card"><h2><span data-i="user"></span>Perfil</h2><p class="sub">Como o sistema chama você.</p>
           <label class="rot" for="aNome">Seu nome</label>
           <input id="aNome" maxlength="30" placeholder="Digite seu nome" autocomplete="off" ><button class="btn sec" onclick="defNome()">Salvar nome</button>
           <span class="rot">Avatar</span><div class="chips" id="aAvs"></div>
         </div>
-        <div class="card"><h2>🔒 Acesso</h2><p class="sub"><span id="accountEmail"></span></p><p id="privacyState"></p>
+        <div class="card"><h2><span data-i="lock"></span>Acesso</h2><p class="sub"><span id="accountEmail"></span></p><p id="privacyState"></p>
           <form id="privacyForm">
             <label class="rot" for="confirmPassword">Senha atual da conta</label>
             <input type="password" id="confirmPassword" autocomplete="current-password" required>
             <label class="rot" for="privacySecret">Novo PIN ou senha de privacidade</label>
             <input type="password" id="privacySecret" autocomplete="new-password">
-            <p class="sub">Use pelo menos 6 dígitos para o PIN ou 8 caracteres para a senha. O painel bloqueia ao abrir ou voltar à aba.</p>
+            <p class="sub">Use pelo menos 6 dígitos para o PIN ou 8 caracteres para a senha. Este aparelho fica conectado e, ao abrir o Cifra ou voltar depois de 1 minuto fora, pede só o PIN.</p>
             <div class="botoes"><button class="btn sec" type="submit">Salvar bloqueio</button>
             <button class="btn sec" type="submit" id="disablePrivacy" hidden>Desativar bloqueio</button></div>
             <p role="status" id="privacyStatus"></p>
-          </form><button class="btn sec" onclick="sair()">Sair da conta</button></div>
-        <div class="card"><h2>🎨 Aparência</h2><p class="sub">Muda na hora, em todas as telas e gráficos.</p>
+          </form><button class="btn sec" onclick="sair()"><span data-i="log-out"></span>Sair da conta</button></div>
+        <div class="card"><h2><span data-i="palette"></span>Aparência</h2><p class="sub">Muda na hora, em todas as telas e gráficos.</p>
           <span class="rot">Tema</span>
-          <div class="seg" id="aTema"><button data-v="escuro">🌙 Escuro</button><button data-v="claro">☀️ Claro</button><button data-v="auto">Seguir o aparelho</button></div>
+          <div class="seg" id="aTema"><button data-v="escuro"><span data-i="moon"></span>Escuro</button><button data-v="claro"><span data-i="sun"></span>Claro</button><button data-v="auto"><span data-i="monitor-smartphone"></span>Seguir o aparelho</button></div>
           <span class="rot">Cor de destaque</span>
           <div class="cores"><span class="cores" id="aCores"></span><input type="color" id="aCorLivre" aria-label="Escolher outra cor" title="Escolher qualquer cor" onchange="defCor(this.value)"></div>
           <span class="rot">Tom do fundo</span><div class="chips" id="aTons"></div>
           <span class="rot">Cansou?</span><button class="btn sec" onclick="padraoVisual()">Voltar ao visual original</button>
         </div>
-        <div class="card"><h2>🔔 Notificações</h2><p class="sub">Os avisos aparecem no sino, no alto da tela.</p>
+        <div class="card"><h2><span data-i="bell"></span>Notificações</h2><p class="sub">Os avisos aparecem no sino, no alto da tela.</p>
           <label class="sw"><input type="checkbox" id="nVenc" onchange="defCfg('avVenc',this.checked)"><i></i>Avisar de contas vencendo e atrasadas</label>
           <label class="rot" for="nDias">Avisar com quantos dias de antecedência</label>
           <select id="nDias" onchange="defCfg('diasAviso',+this.value)">
@@ -215,7 +223,7 @@
           <label class="sw"><input type="checkbox" id="nSaldo" onchange="defCfg('avSaldo',this.checked)"><i></i>Avisar quando o mês atual ficar no vermelho (contando a caixinha)</label>
           <label class="sw"><input type="checkbox" id="nNav" onchange="ligarNotifNav(this.checked)"><i></i>Mostrar também como aviso do navegador ao abrir</label>
         </div>
-        <div class="card"><h2>🏷️ Categorias</h2><p class="sub">Troque ícone, nome e cor. Só dá para apagar categoria sem lançamentos.</p>
+        <div class="card"><h2><span data-i="tag"></span>Categorias</h2><p class="sub">Troque ícone, nome e cor. Só dá para apagar categoria sem lançamentos.</p>
           <div id="aCats"></div>
           <span class="rot">Nova categoria</span>
           <div class="catEd">
@@ -226,7 +234,7 @@
             <button class="btn sec" onclick="addCat()">Adicionar</button>
           </div>
         </div>
-        <div class="card"><h2>💾 Dados</h2><p class="sub">Baixe uma cópia dos dados da sua conta ou restaure um backup JSON.</p>
+        <div class="card"><h2><span data-i="database"></span>Dados</h2><p class="sub">Baixe uma cópia dos dados da sua conta ou restaure um backup JSON.</p>
           <div class="botoes">
             <button class="btn sec" onclick="exportar()">Baixar backup</button>
             <button class="btn sec" onclick="document.getElementById('arq').click()">Carregar backup</button>
@@ -245,18 +253,19 @@
 </div>
 
 <nav id="bottomMenu" class="baixo" aria-label="Seções">
-  <button class="ativa" data-pg="painel" onclick="abrir('painel')"><span class="ic">📊</span>Painel</button>
-  <button data-pg="lanc" onclick="abrir('lanc')"><span class="ic">📋</span>Lista</button>
-  <button data-pg="graficos" onclick="abrir('graficos')"><span class="ic">📈</span>Gráficos</button>
-  <button data-pg="orc" onclick="abrir('orc')"><span class="ic">🎯</span>Orçamento</button>
-  <button data-pg="ajustes" onclick="abrir('ajustes')"><span class="ic">⚙️</span>Ajustes</button>
+  <button class="ativa" data-pg="painel" onclick="abrir('painel')"><span class="ic" data-i="layout-dashboard"></span>Painel</button>
+  <button data-pg="lanc" onclick="abrir('lanc')"><span class="ic" data-i="receipt-text"></span>Lista</button>
+  <button data-pg="graficos" onclick="abrir('graficos')"><span class="ic" data-i="chart-line"></span>Gráficos</button>
+  <button data-pg="orc" onclick="abrir('orc')"><span class="ic" data-i="target"></span>Orçamento</button>
+  <button data-pg="ajustes" onclick="abrir('ajustes')"><span class="ic" data-i="settings"></span>Ajustes</button>
 </nav>
+<button type="button" class="fab" onclick="abrirForm()" aria-label="Novo lançamento" title="Novo lançamento"><span data-i="plus"></span></button>
 
 <!-- ===== JANELA DE LANÇAMENTO ===== -->
 <div class="fundo" id="mdForm" onmousedown="if(event.target===this)fecharForm()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fTit">
-    <div class="mdTop"><h2 id="fTit">Novo lançamento</h2><button class="ac" onclick="fecharForm()" aria-label="Fechar">✕</button></div>
-    <div class="seg larga" id="fTipo"><button type="button" data-v="gasto">💸 Gasto</button><button type="button" data-v="entrada">💰 Entrada</button></div>
+    <div class="mdTop"><h2 id="fTit">Novo lançamento</h2><button class="ac" onclick="fecharForm()" aria-label="Fechar"><span data-i="x"></span></button></div>
+    <div class="seg larga" id="fTipo"><button type="button" data-v="gasto"><span data-i="arrow-up-right"></span>Gasto</button><button type="button" data-v="entrada"><span data-i="arrow-down-left"></span>Entrada</button></div>
     <div id="fBlocoCat"><span class="rot">Categoria</span><div class="chips" id="fCats"></div></div>
     <div class="duas">
       <div><label class="rot" for="fVal">Valor em reais</label><input id="fVal" class="grande" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
@@ -276,7 +285,7 @@
       </div>
     </div>
     <div class="msg" id="fMsg" role="alert"></div>
-    <div class="mdBase"><button class="btn sec perigo" id="fDel" onclick="apagarDoForm()">Apagar</button><button class="btn" onclick="salvarForm()">Salvar lançamento</button></div>
+    <div class="mdBase"><button class="btn sec perigo" id="fDel" onclick="apagarDoForm()"><span data-i="trash-2"></span>Apagar</button><button class="btn sec" id="fDup" onclick="duplicarDoForm()"><span data-i="copy"></span>Duplicar</button><button class="btn" onclick="salvarForm()">Salvar lançamento</button></div>
   </div>
 </div>
 
