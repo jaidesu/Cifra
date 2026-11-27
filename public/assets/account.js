@@ -239,10 +239,9 @@ function salvarForm() {
   if (!F || busy) return;
   const value = lerValor($('fVal').value), date = $('fData').value;
   const expense = F.tipo === 'gasto';
-  const error = text=>{ $('fMsg').textContent = text; };
-  if (expense && !F.cat) return error('Escolha uma categoria.');
-  if (!(r2(value)>0)) return error('Digite um valor maior que zero.');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return error('Escolha a data.');
+  if (expense && !F.cat) return erroCampo('fCats','Escolha uma categoria.');
+  if (!(r2(value)>0)) return erroCampo('fVal','Informe um valor maior que zero.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return erroCampo('fData','Informe a data.');
   const cat = expense ? F.cat : 'Entrada';
   const row = {tipo:F.tipo,cat,desc:$('fDesc').value.trim() || cat,valor:r2(value),data:date,pago:expense && F.pago};
   const done = ()=>{ fecharForm(); toast('Lançamento salvo.'); };

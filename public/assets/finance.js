@@ -26,7 +26,7 @@ const deISO = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y
 const hojeISO = () => iso(new Date());
 const dBR = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4);
 const difDias = (a,b) => Math.round((deISO(b)-deISO(a))/864e5);
-const fmt = v => (v<0?'−':'')+'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt = v => (v<0?'−':'')+'R$\u00a0'+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = v => (v<0?'−':'')+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2});
 const pct = (a,b) => b ? (a/b*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%' : '0%';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -56,6 +56,20 @@ const lum = ([r,g,b]) => (0.299*r+0.587*g+0.114*b)/255;
 const alfa = (hex,a) => `rgba(${hexRgb(hex).join(',')},${a})`;
 const mistura = (hex,alvo,t) => { const a = hexRgb(hex), b = hexRgb(alvo); return 'rgb('+a.map((x,i)=>Math.round(x+(b[i]-x)*t)).join(',')+')'; };
 const corTexto = hex => lum(hexRgb(hex)) > .6 ? '#111111' : '#ffffff';
+/* Contraste WCAG: escolhe o texto legível sobre a cor de destaque e ajusta a cor dos links. */
+const lumRel = rgb => { const [r,g,b] = rgb.map(v=>{ v /= 255; return v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*r+.7152*g+.0722*b; };
+const contraste = (a,b) => { const x = lumRel(a), y = lumRel(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+const misturaRgb = (a,b,t) => a.map((x,i)=>Math.round(x+(b[i]-x)*t));
+const rgbHex = rgb => '#'+rgb.map(v=>v.toString(16).padStart(2,'0')).join('');
+function hslRgb(h,s,l){
+  s /= 100; l /= 100;
+  const a = s*Math.min(l,1-l), f = n => { const k = (n+h/30)%12; return l-a*Math.max(-1,Math.min(k-3,9-k,1)); };
+  return [f(0),f(8),f(4)].map(v=>Math.round(v*255));
+}
+function legivel(cor, fundo, alvo, meta){
+  for (let t = 0; t <= 1; t += .04){ const c = misturaRgb(cor, alvo, t); if (contraste(c, fundo) >= meta) return rgbHex(c); }
+  return rgbHex(alvo);
+}
 let S = null;
 const acha = id => S.lanc.find(l=>l.id===id);
 /* ===================== TEMA E CORES ===================== */
@@ -69,17 +83,21 @@ function aplicarTema(){
   const hs = l => `hsl(${h}, ${s}%, ${l}%)`;
   const ac = /^#[0-9a-f]{6}$/i.test(c.cor) ? c.cor.toLowerCase() : '#e11d2e';
   
-  PAL = escuro
-    ? {bg:hs(4), card:hs(8), card2:hs(12), borda:hs(18), txt:hs(95), sub:hs(64), grade:hs(15), verde:'#22c55e', verm:'#ff4d5e', amar:'#f5a524'}
-    : {bg:hs(95), card:hs(100), card2:hs(92), borda:hs(83), txt:hs(10), sub:hs(36), grade:hs(90), verde:'#15803d', verm:'#dc2626', amar:'#b45309'};
+  /* Tons do guia de design: fundo #070707, superfície #121212, campo #1c1c1c e borda #2b2b2b. */
+  const T = escuro ? {bg:2.75, card:7.05, card2:11, borda:16.85, txt:95, sub:63, grade:13}
+                   : {bg:95, card:100, card2:92, borda:83, txt:10, sub:36, grade:90};
+  PAL = Object.fromEntries(Object.entries(T).map(([k,v])=>[k,hs(v)]));
+  Object.assign(PAL, escuro ? {verde:'#22c55e', verm:'#ff4d5e', amar:'#f5a524'} : {verde:'#15803d', verm:'#dc2626', amar:'#b45309'});
   PAL.escuro = escuro; PAL.ac = ac;
-  const rgb = hexRgb(ac), l = lum(rgb);
+  const rgb = hexRgb(ac), campo = hslRgb(h, s, T.card2);
+  const branco = [255,255,255], preto = [17,17,17];
   const vars = {
     bg:PAL.bg, card:PAL.card, card2:PAL.card2, borda:PAL.borda, txt:PAL.txt, sub:PAL.sub,
     verde:PAL.verde, verm:PAL.verm, amar:PAL.amar,
     verdebg:alfa(PAL.verde,.13), vermbg:alfa(PAL.verm,.13), amarbg:alfa(PAL.amar,.15),
-    ac, ac2:mistura(ac, escuro?'#ffffff':'#000000', .16), acbg:alfa(ac, escuro?.18:.12), actx:l > .62 ? '#111111' : '#ffffff',
-    acfg: escuro ? mistura(ac,'#ffffff', l<.45?.28 : l<.6?.12 : 0) : mistura(ac,'#000000', l>.6?.45 : l>.45?.25 : .08)
+    ac, ac2:mistura(ac, escuro?'#ffffff':'#000000', .14), acbg:alfa(ac, escuro?.16:.10),
+    actx: contraste(rgb, branco) >= contraste(rgb, preto) ? '#ffffff' : '#111111',
+    acfg: legivel(rgb, campo, escuro ? branco : [0,0,0], 4.5)
   };
   Object.entries(vars).forEach(([k,v])=>r.style.setProperty('--'+k, v));
   r.style.colorScheme = escuro ? 'dark' : 'light';
@@ -131,10 +149,10 @@ function renderCaixinha(cxIni, sob, cxFim, usou, np){
   else if (sob > 0 && cxIni < 0){ nota = `Os ${fmt(sob)} que sobraram ${np} ajudaram a cobrir o que faltava de antes.`; tipo = 'aviso'; }
   else if (sob > 0){ nota = `Os ${fmt(sob)} que sobraram ${np} foram para a caixinha.`; tipo = 'ok'; }
   else nota = 'Nada entrou nem saiu da caixinha neste período.';
-  $('cxCard').innerHTML = `<h2>${ico('piggy-bank')}Caixinha</h2>
+  $('cxCard').innerHTML = `<h2>Caixinha</h2>
     <p class="sub">O que sobra fica guardado e passa para o período seguinte. Quando você gasta mais do que entra, a caixinha cobre a diferença.</p>
     <div class="cxl"><span>Veio de antes</span><b class="${cls(cxIni)}">${fmt(cxIni)}</b></div>
-    <div class="cxl"><span>Resultado ${np}</span><b class="${cls(sob)}">${sob > 0 ? '+ ' : ''}${fmt(sob)}</b></div>
+    <div class="cxl"><span>Resultado ${np}</span><b class="${cls(sob)}">${sob > 0 ? '+' : ''}${fmt(sob)}</b></div>
     <div class="cxl fim"><span>Caixinha no fim</span><b class="${cls(cxFim)}">${fmt(cxFim)}</b></div>
     <div class="cxnota ${tipo}">${nota}</div>`;
 }
@@ -199,7 +217,7 @@ function renderPeriodo(){
   document.querySelectorAll('#pNav .seta').forEach(s=>s.style.visibility = nav ? 'visible' : 'hidden');
   $('pIrBox').style.display = nav ? 'flex' : 'none';
   $('pCustom').style.display = P.modo === 'custom' ? 'flex' : 'none';
-  $('pLabel').textContent = rotuloPeriodo();
+  $('pLabel').innerHTML = `<span>${esc(rotuloPeriodo())}</span>${nav ? ico('chevron-down') : ''}`;
   $('pLabel').disabled = !nav;
   $('pIr').value = P.ref; $('pDe').value = P.de; $('pAte').value = P.ate;
 }
@@ -232,26 +250,28 @@ const bolaCat = (c, cls) => `<span class="bola ${cls||''}" style="background:${c
 function abrirLinha(e, id){ if (!e.target.closest('button,a,input,select')) abrirForm(id); }
 function statusDe(l){
   if (l.tipo === 'entrada') return {txt:'', cls:''};
-  if (l.pago) return {txt:'pago', cls:'ok'};
+  if (l.pago) return {txt:'Pago', cls:'ok'};
   const h = hojeISO();
-  if (l.data < h) return {txt:'atrasado', cls:'ruim'};
-  if (l.data === h) return {txt:'vence hoje', cls:'aviso'};
-  return {txt:'a pagar', cls:'neutro'};
+  if (l.data < h) return {txt:'Vencida', cls:'ruim'};
+  if (l.data === h) return {txt:'Vence hoje', cls:'aviso'};
+  return {txt:'A pagar', cls:'neutro'};
 }
 function botoes(l){
   const d = esc(l.desc);
-  return (l.tipo === 'gasto' ? `<button class="ac ac-pago ${l.pago?'feito':''}" title="${l.pago?'Desmarcar como pago':'Marcar como pago'}" aria-label="${l.pago?'Desmarcar':'Marcar'} ${d} como pago" aria-pressed="${!!l.pago}" onclick="alternarPago(${l.id})">${ico('check')}</button>` : '') +
+  return (l.tipo !== 'gasto' ? '<span class="ac ac-vago" aria-hidden="true"></span>' : '') + (l.tipo === 'gasto' ? `<button class="ac ac-pago ${l.pago?'feito':''}" title="${l.pago?'Desmarcar como pago':'Marcar como pago'}" aria-label="${l.pago?'Desmarcar':'Marcar'} ${d} como pago" aria-pressed="${!!l.pago}" onclick="alternarPago(${l.id})">${ico('check')}</button>` : '') +
     `<button class="ac ac-extra" title="Editar" aria-label="Editar ${d}" onclick="abrirForm(${l.id})">${ico('pencil')}</button>` +
     `<button class="ac ac-extra" title="Duplicar" aria-label="Duplicar ${d}" onclick="duplicar(${l.id})">${ico('copy')}</button>` +
     `<button class="ac ac-extra del" title="Apagar" aria-label="Apagar ${d}" onclick="excluir(${l.id})">${ico('trash-2')}</button>`;
 }
+/* No ano corrente, o dia e o mês bastam; em outro ano, a data aparece completa. */
+const dataCurta = d => d.slice(0,4) === hojeISO().slice(0,4) ? dBR(d).slice(0,5) : dBR(d);
 function linhaItem(l){
   const e = l.tipo === 'entrada', c = catDe(l), st = statusDe(l);
   return `<div class="item toque ${!e && l.pago ? 'pago' : ''}" onclick="abrirLinha(event,${l.id})">
     ${bolaCat(c)}
     <div class="meio"><div class="nome">${esc(l.desc)}</div>
-      <div class="info"><span>${esc(c.n)}</span><span>${dBR(l.data)}</span>${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : ''}</div></div>
-    <div class="valor ${e?'pos':'neg'}">${e?'+':'−'} ${fmt(l.valor)}</div>
+      <div class="info"><span>${esc(c.n)}</span><span>${dataCurta(l.data)}</span>${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : ''}</div></div>
+    <div class="valor ${e?'pos':''}">${e?'+':'−'}${fmt(l.valor)}</div>
     <div class="acoes">${botoes(l)}</div>
   </div>`;
 }
@@ -259,10 +279,10 @@ function linhaTabela(l){
   const e = l.tipo === 'entrada', c = catDe(l), st = statusDe(l);
   return `<div class="tr toque ${!e && l.pago ? 'pago' : ''}" onclick="abrirLinha(event,${l.id})">
     <span class="c-data">${dBR(l.data)}<small>${DIAS[deISO(l.data).getDay()]}</small></span>
-    <span class="c-desc">${bolaCat(c,'peq')}<span class="tx"><b>${esc(l.desc)}</b><small class="soMob">${esc(c.n)}, ${dBR(l.data)}${st.txt ? ', '+st.txt : ''}</small></span></span>
+    <span class="c-desc">${bolaCat(c,'peq')}<span class="tx"><b>${esc(l.desc)}</b><small class="soMob">${dataCurta(l.data)} · ${esc(c.n)}${st.txt ? ` <span class="tag ${st.cls}">${st.txt}</span>` : ''}</small></span></span>
     <span class="c-cat">${esc(c.n)}</span>
-    <span class="c-st">${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : '<span class="tag ok">entrada</span>'}</span>
-    <span class="c-val ${e?'pos':'neg'}">${e?'+':'−'} ${fmt(l.valor)}</span>
+    <span class="c-st">${st.txt ? `<span class="tag ${st.cls}">${st.txt}</span>` : ''}</span>
+    <span class="c-val ${e?'pos':''}">${e?'+':'−'}${fmt(l.valor)}</span>
     <span class="c-ac">${botoes(l)}</span>
   </div>`;
 }
@@ -273,6 +293,17 @@ function barra(nome, valor, total, max, cor, extra){
 
 /* ===================== PAINEL ===================== */
 let visao = 'gasto';
+function vazio(txt, rot, acao){
+  return `<div class="vazio"><p>${txt}</p>${rot ? `<button class="btn sec" onclick="${acao}">${rot}</button>` : ''}</div>`;
+}
+const vazioConta = () => vazio('Nenhum lançamento ainda.', 'Criar lançamento', 'abrirForm()');
+function alterarPeriodo(){
+  const barra = $('barraPeriodo');
+  barra.scrollIntoView({behavior:CALMO?'auto':'smooth', block:'center'});
+  if (P.modo === 'custom') $('pDe').focus();
+  else if (['dia','semana','mes','ano'].includes(P.modo)) { $('pLabel').focus(); escolherData(); }
+  else barra.querySelector('#pModo button.sel')?.focus();
+}
 function verNoPainel(v){
   visao = v; renderPainel();
   if (window.innerWidth < 980) $('blocoLista').scrollIntoView({behavior:CALMO?'auto':'smooth', block:'start'});
@@ -319,9 +350,9 @@ function renderPainel(){
   /* lista ligada à aba clicada */
   const V = {
     entrada:{arr:E, tit:'Tudo o que entrou', tot:'Total que entrou', val:ent, cls:'pos'},
-    gasto:{arr:G, tit:'Tudo o que saiu', tot:'Total que saiu', val:sai, cls:'neg'},
+    gasto:{arr:G, tit:'Tudo o que saiu', tot:'Total que saiu', val:sai, cls:''},
     tudo:{arr:L, tit:'Entradas e gastos juntos', tot:'Sobrou', val:sob, cls:sob<0?'neg':'pos'},
-    pendente:{arr:G.filter(g=>!g.pago), tit:'O que falta pagar', tot:'Total a pagar', val:falta, cls:'neg'}
+    pendente:{arr:G.filter(g=>!g.pago), tit:'O que falta pagar', tot:'Total a pagar', val:falta, cls:''}
   }[visao];
   const arr = [...V.arr].sort((a,b)=>a.data.localeCompare(b.data) || b.valor-a.valor);
   const MAX = 14;
@@ -331,12 +362,14 @@ function renderPainel(){
     ? arr.slice(0,MAX).map(linhaItem).join('') +
       (arr.length > MAX ? `<button class="link bloco" onclick="irLanc('${visao}')">Ver todos os ${arr.length} em Lançamentos</button>` : '') +
       `<div class="totalzinho"><span>${V.tot}</span><span class="${V.cls}">${fmt(V.val)}</span></div>`
-    : `<div class="vazio">Nada aqui ${np}.<br><button class="link" onclick="abrirForm()">Fazer um lançamento</button></div>`;
+    : !S.lanc.length ? vazioConta()
+    : !L.length ? vazio('Nenhum lançamento neste período.', 'Alterar período', 'alterarPeriodo()')
+    : vazio({entrada:'Nenhuma entrada neste período.', gasto:'Nenhum gasto neste período.', pendente:'Nenhuma conta a pagar neste período.'}[visao], 'Criar lançamento', 'abrirForm()');
 
   /* categorias */
   const porCat = S.cats.map((c,i)=>{ const g = G.filter(x=>x.cat===c.n); return {...c, i, total:soma(g), qtd:g.length}; }).sort((a,b)=>b.total-a.total);
   const usadas = porCat.filter(c=>c.total > 0), mx = usadas.length ? usadas[0].total : 1;
-  $('cSub').textContent = `Onde o dinheiro foi ${np}. Clique numa categoria para ver os lançamentos dela.`;
+  $('cSub').textContent = `${cap(np)}. Escolha uma categoria para ver os lançamentos.`;
   $('cats').innerHTML = usadas.length
     ? usadas.map(c=>`<button class="catb" onclick="irCat(${c.i})"><span class="cat-top"><span>${esc(c.ic)} ${esc(c.n)} <small>${plural(c.qtd,'lançamento','lançamentos')}</small></span><b>${fmt(c.total)} <em>${pct(c.total,sai)}</em></b></span><span class="trilho"><span style="width:${c.total/mx*100}%;background:${c.cor}"></span></span></button>`).join('')
     : `<div class="vazio">Nenhum gasto ${np}.</div>`;
@@ -345,13 +378,13 @@ function renderPainel(){
   const pend = S.lanc.filter(l=>l.tipo==='gasto' && !l.pago).sort((a,b)=>a.data.localeCompare(b.data));
   $('prox').innerHTML = pend.length
     ? pend.slice(0,6).map(l=>{
-        const d = difDias(h, l.data);
-        const q = d < 0 ? `<span class="tag ruim">atrasada há ${plural(-d,'dia','dias')}</span>` : d === 0 ? '<span class="tag aviso">vence hoje</span>' : `<span class="tag neutro">em ${plural(d,'dia','dias')}</span>`;
-        return `<div class="item toque" onclick="abrirLinha(event,${l.id})"><div class="meio"><div class="nome">${esc(l.desc)}</div><div class="info"><span>${dBR(l.data)}</span>${q}</div></div>
-          <div class="valor neg">${fmt(l.valor)}</div>
+        const d = difDias(h, l.data), dia = dataCurta(l.data);
+        const q = d < 0 ? `<span>Venceu em ${dia}</span><span class="tag ruim">Vencida</span>` : d === 0 ? '<span class="tag aviso">Vence hoje</span>' : `<span>Vence em ${dia}</span>`;
+        return `<div class="item toque" onclick="abrirLinha(event,${l.id})"><div class="meio"><div class="nome">${esc(l.desc)}</div><div class="info">${q}</div></div>
+          <div class="valor">${fmt(l.valor)}</div>
           <div class="acoes"><button class="ac ac-pago" title="Marcar como pago" aria-label="Marcar ${esc(l.desc)} como pago" onclick="alternarPago(${l.id})">${ico('check')}</button></div></div>`;
       }).join('') + (pend.length > 6 ? `<button class="link bloco" onclick="verPendentes()">Ver as ${pend.length} contas a pagar</button>` : '')
-    : '<div class="vazio">Nenhuma conta esperando pagamento.</div>';
+    : vazio('Nenhuma conta esperando pagamento.');
 
   /* indicadores */
   const dias = diasPeriodo(L), maior = G.reduce((m,g)=>!m || g.valor > m.valor ? g : m, null), top = usadas[0];
@@ -361,7 +394,7 @@ function renderPainel(){
   const ind = (r,v,s,cls) => `<div class="ind"><span>${r}</span><b class="${cls||''}">${v}</b><small>${s}</small></div>`;
   $('inds').innerHTML =
     ind('Taxa de economia', ent > 0 ? Math.round(sob/ent*100)+'%' : 'sem entrada', ent > 0 ? 'do que entrou ficou com você' : 'nada entrou no período', ent > 0 ? (sob<0?'neg':'pos') : '') +
-    ind(ico('piggy-bank')+'Caixinha no fim do período', fmt(acum), 'tudo o que sobrou até aqui', acum<0?'neg':'pos') +
+    ind('Caixinha no fim do período', fmt(acum), 'tudo o que sobrou até aqui', acum<0?'neg':'pos') +
     ind('Gasto médio por dia', fmt(r2(sai/dias)), `${plural(dias,'dia','dias')} no período`) +
     ind('Maior gasto', maior ? fmt(maior.valor) : 'nenhum', maior ? esc(maior.desc) : 'nada saiu no período') +
     ind('Categoria que mais pesou', top ? `${esc(top.ic)} ${esc(top.n)}` : 'nenhuma', top ? `${fmt(top.total)}, ${pct(top.total,sai)} dos gastos` : 'nada saiu no período') +
@@ -411,7 +444,10 @@ function renderLanc(){
   $('nFiltros').textContent = ativos ? String(ativos) : '';
   $('lResumo').innerHTML = ind('Lançamentos na lista', String(L.length)) + ind('Entrou', fmt(ent), 'pos') + ind('Saiu', fmt(sai), 'neg') + ind('Saldo da lista', fmt(sal), sal<0?'neg':'pos');
   $('lTabela').innerHTML = '<div class="tr th"><span>Data</span><span>Descrição</span><span>Categoria</span><span>Situação</span><span class="c-val">Valor</span><span></span></div>' +
-    (L.length ? L.map(linhaTabela).join('') : `<div class="vazio">Nenhum lançamento com esses filtros ${noPeriodo()}. Troque o período ou limpe os filtros.</div>`);
+    (L.length ? L.map(linhaTabela).join('')
+      : !S.lanc.length ? vazioConta()
+      : ativos || $('qBusca').value.trim() ? vazio('Nenhum lançamento com esses filtros.', 'Limpar filtros', 'limparFiltros()')
+      : vazio('Nenhum lançamento neste período.', 'Alterar período', 'alterarPeriodo()'));
 }
 function alternarFiltros(){
   const aberto = $('filtros').classList.toggle('aberto');
@@ -490,6 +526,8 @@ function grafico(id, cfg){
   if (!temChart || !cv) return;
   if (GR[id]) GR[id].destroy();
   if (CALMO) cfg.options.animation = false;
+  cv.setAttribute('role','img');
+  if (!cv.hasAttribute('aria-label')) cv.setAttribute('aria-label','Gráfico. Os valores exatos estão nas listas e tabelas desta página.');
   GR[id] = new Chart(cv, cfg);
 }
 function opBarras(){
@@ -592,17 +630,18 @@ function renderOrc(){
     const g = soma(G.filter(x=>x.cat===c.n)), l = +S.orc[c.n] || 0;
     if (l){ lim += l; gastoLim += g; }
     const p = l ? g/l*100 : 0, cls = !l ? '' : p >= 100 ? 'ruim' : p >= 80 ? 'aviso' : 'ok';
-    return `<div class="card">
+    const resto = l ? (g <= l ? `<span class="opct">Restam ${fmt(r2(l-g))}</span>` : `<span class="opct ruim">Passou ${fmt(r2(g-l))}</span>`) : '';
+    return `<div class="card orc ${l ? '' : 'semLimite'}">
       <div class="otop">${bolaCat(c)}<b>${esc(c.n)}</b>
-        <label class="olim">Limite em R$ <input inputmode="decimal" value="${l ? String(l).replace('.',',') : ''}" placeholder="sem limite" onchange="defOrc(${i},this.value)"></label></div>
-      <div class="onum"><span>Gasto no mês: <b>${fmt(g)}</b></span><span>${l ? (g <= l ? `Ainda cabe <b class="pos">${fmt(r2(l-g))}</b>` : `Passou <b class="neg">${fmt(r2(g-l))}</b>`) : 'Sem limite definido'}</span></div>
-      <div class="trilho"><span style="width:${Math.min(p,100)}%;background:${cls==='ruim' ? 'var(--verm)' : cls==='aviso' ? 'var(--amar)' : c.cor}"></span></div>
-      ${l ? `<div class="opct ${cls}">${Math.round(p)}% do limite usado</div>` : ''}
+        <label class="olim"><span>Limite mensal</span><input inputmode="decimal" value="${l ? String(l).replace('.',',') : ''}" placeholder="0,00" aria-label="Limite mensal de ${esc(c.n)} em reais" onchange="defOrc(${i},this.value)"></label></div>
+      ${l ? `<div class="onum"><span><b>${fmt(g)}</b> de ${fmt(l)}</span>${resto}</div>
+      <div class="trilho" role="img" aria-label="${Math.round(p)}% do limite usado"><span style="width:${Math.min(p,100)}%;background:${cls==='ruim' ? 'var(--verm)' : cls==='aviso' ? 'var(--amar)' : c.cor}"></span></div>`
+      : `<div class="onum"><span>${g ? `<b>${fmt(g)}</b> gastos no mês` : 'Nenhum gasto no mês'}</span><span class="opct">Sem limite definido</span></div>`}
     </div>`;
   }).join('');
   lim = r2(lim); gastoLim = r2(gastoLim);
   $('oResumo').innerHTML = lim
-    ? `<div class="onum"><span>Soma dos limites: <b>${fmt(lim)}</b></span><span>Gasto nessas categorias: <b>${fmt(gastoLim)}</b> (${pct(gastoLim,lim)})</span></div>
+    ? `<div class="onum"><span><b>${fmt(gastoLim)}</b> de ${fmt(lim)} nas categorias com limite</span>${gastoLim > lim ? `<span class="opct ruim">Passou ${fmt(r2(gastoLim-lim))}</span>` : `<span class="opct">Restam ${fmt(r2(lim-gastoLim))}</span>`}</div>
        <div class="trilho"><span style="width:${Math.min(gastoLim/lim*100,100)}%;background:${gastoLim > lim ? 'var(--verm)' : 'var(--verde)'}"></span></div>`
     : '<div class="sub">Nenhum limite definido ainda. Digite um valor em qualquer categoria abaixo.</div>';
 }
@@ -660,8 +699,8 @@ function dataPadrao(){
   return (h >= a && h <= b) || a < '1000' ? h : a;
 }
 function abrirForm(id, copia){
-  const l = id ? acha(id) : null;
-  F = {id: l && !copia ? l.id : null, tipo: l ? l.tipo : 'gasto', cat: l && l.tipo === 'gasto' ? l.cat : null, pago: l ? !!l.pago : true, tocou: !!l};
+  const l = id ? acha(id) : null, volta = F?.volta || document.activeElement;
+  F = {volta, id: l && !copia ? l.id : null, tipo: l ? l.tipo : 'gasto', cat: l && l.tipo === 'gasto' ? l.cat : null, pago: l ? !!l.pago : true, tocou: !!l};
   $('fTit').textContent = F.id ? 'Editar lançamento' : copia ? 'Duplicar lançamento' : 'Novo lançamento';
   $('fVal').value = l ? String(l.valor).replace('.',',') : '';
   $('fDesc').value = l ? l.desc : '';
@@ -670,7 +709,7 @@ function abrirForm(id, copia){
   $('fBlocoRep').style.display = F.id ? 'none' : 'block';
   $('fDel').style.display = F.id ? 'inline-flex' : 'none';
   $('fDup').style.display = F.id ? 'inline-flex' : 'none';
-  $('fMsg').textContent = '';
+  limparErro();
   if (!l) F.pago = $('fData').value <= hojeISO();
   pintarForm();
   fecharNotif();
@@ -678,18 +717,36 @@ function abrirForm(id, copia){
   setTimeout(()=>$('fVal').focus(), 60);
 }
 function duplicar(id){ abrirForm(id, true); }
-function fecharForm(){ $('mdForm').classList.remove('aberto'); F = null; }
+function fecharForm(){
+  if (!F) return;
+  const volta = F.volta;
+  $('mdForm').classList.remove('aberto'); F = null;
+  if (volta && volta !== document.body && document.contains(volta)) volta.focus();
+}
+/* O erro aparece junto do campo que precisa de correção. */
+function erroCampo(id, texto){
+  limparErro();
+  const campo = $(id), msg = $('fMsg');
+  (campo.closest('.campo') || campo).after(msg);
+  msg.textContent = texto;
+  if (campo.matches('input')) { campo.setAttribute('aria-invalid','true'); campo.setAttribute('aria-describedby','fMsg'); }
+  (campo.matches('input,select') ? campo : campo.querySelector('button'))?.focus();
+}
+function limparErro(){
+  $('fMsg').textContent = '';
+  document.querySelectorAll('#mdForm [aria-invalid]').forEach(c=>{ c.removeAttribute('aria-invalid'); c.removeAttribute('aria-describedby'); });
+}
 function pintarForm(){
   if (!F) return;
   const ent = F.tipo === 'entrada';
   document.querySelectorAll('#fTipo button').forEach(b=>b.classList.toggle('sel', b.dataset.v === F.tipo));
   $('fBlocoCat').style.display = ent ? 'none' : 'block';
   $('fBlocoPago').style.display = ent ? 'none' : 'block';
-  $('fCats').innerHTML = S.cats.map((c,i)=>`<button type="button" class="chip ${F.cat === c.n ? 'sel' : ''}" onclick="fCat(${i})"><span>${esc(c.ic)}</span>${esc(c.n)}</button>`).join('');
+  $('fCats').innerHTML = S.cats.map((c,i)=>`<button type="button" class="chip ${F.cat === c.n ? 'sel' : ''}" aria-pressed="${F.cat === c.n}" onclick="fCat(${i})"><span>${esc(c.ic)}</span>${esc(c.n)}</button>`).join('');
   document.querySelectorAll('#fPago button').forEach(b=>b.classList.toggle('sel', (b.dataset.v === '1') === F.pago));
   $('fDesc').placeholder = ent ? 'Ex: Salário, venda, YouTube' : 'Ex: iFood, tênis, cinema (se deixar vazio, uso o nome da categoria)';
 }
-function fCat(i){ if (F && S.cats[i]){ F.cat = S.cats[i].n; $('fMsg').textContent = ''; pintarForm(); } }
+function fCat(i){ if (F && S.cats[i]){ F.cat = S.cats[i].n; limparErro(); pintarForm(); } }
 function apagarDoForm(){ const id = F && F.id; fecharForm(); if (id) excluir(id); }
 function duplicarDoForm(){ const id = F && F.id; if (id) abrirForm(id, true); }
 const inicial = () => (S.perfil.nome.trim()[0] || '?').toUpperCase();
@@ -787,7 +844,7 @@ $('pModo').addEventListener('click', e=>{
   render();
 });
 $('aTema').addEventListener('click', e=>{ const bt = e.target.closest('button'); if (bt) defTema(bt.dataset.v); });
-$('fTipo').addEventListener('click', e=>{ const bt = e.target.closest('button'); if (bt && F){ F.tipo = bt.dataset.v; $('fMsg').textContent = ''; pintarForm(); } });
+$('fTipo').addEventListener('click', e=>{ const bt = e.target.closest('button'); if (bt && F){ F.tipo = bt.dataset.v; limparErro(); pintarForm(); } });
 $('fPago').addEventListener('click', e=>{ const bt = e.target.closest('button'); if (bt && F){ F.pago = bt.dataset.v === '1'; F.tocou = true; pintarForm(); } });
 $('fData').addEventListener('change', ()=>{ if (F && !F.tocou){ F.pago = $('fData').value <= hojeISO(); pintarForm(); } });
 $('notif').addEventListener('click', e=>e.stopPropagation());

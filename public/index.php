@@ -108,10 +108,10 @@
       <div class="duasCol">
         <div class="balanco" id="blocoLista">
           <div class="abas">
-            <button class="kpi" data-v="entrada" onclick="verNoPainel('entrada')"><span class="kr"><span class="pos" data-i="arrow-down-left"></span>Entrou</span><span class="num pos" id="kEnt"></span><span class="mini" id="kEntM"></span></button>
-            <button class="kpi" data-v="gasto" onclick="verNoPainel('gasto')"><span class="kr"><span class="neg" data-i="arrow-up-right"></span>Saiu</span><span class="num neg" id="kSai"></span><span class="mini" id="kSaiM"></span></button>
-            <button class="kpi" data-v="tudo" onclick="verNoPainel('tudo')"><span class="kr"><span data-i="wallet"></span>Sobrou</span><span class="num" id="kSob"></span><span class="mini" id="kSobM"></span></button>
-            <button class="kpi" data-v="pendente" onclick="verNoPainel('pendente')"><span class="kr"><span data-i="hourglass"></span>Falta pagar</span><span class="num" id="kFal"></span><span class="mini" id="kFalM"></span><span class="barra"><span id="kBar"></span></span></button>
+            <button class="kpi" data-v="entrada" onclick="verNoPainel('entrada')"><span class="kr">Entrou</span><span class="num pos" id="kEnt"></span><span class="mini" id="kEntM"></span></button>
+            <button class="kpi" data-v="gasto" onclick="verNoPainel('gasto')"><span class="kr">Saiu</span><span class="num neg" id="kSai"></span><span class="mini" id="kSaiM"></span></button>
+            <button class="kpi" data-v="tudo" onclick="verNoPainel('tudo')"><span class="kr">Sobrou</span><span class="num" id="kSob"></span><span class="mini" id="kSobM"></span></button>
+            <button class="kpi" data-v="pendente" onclick="verNoPainel('pendente')"><span class="kr">Falta pagar</span><span class="num" id="kFal"></span><span class="mini" id="kFalM"></span><span class="barra"><span id="kBar"></span></span></button>
           </div>
           <div class="listaBox">
             <div class="cab"><h2 id="lTit"></h2><span class="sub" id="lSub"></span></div>
@@ -121,7 +121,7 @@
         <div class="col">
           <div class="card" id="cxCard"></div>
           <div class="card"><h2>Gastos por categoria</h2><p class="sub" id="cSub"></p><div id="cats"></div></div>
-          <div class="card"><h2>Próximas contas a pagar</h2><p class="sub">Tudo o que ainda não foi marcado como pago, em qualquer mês.</p><div id="prox"></div></div>
+          <div class="card"><h2>Próximas contas a pagar</h2><p class="sub">Inclui contas de outros meses que ainda não foram pagas.</p><div id="prox"></div></div>
         </div>
       </div>
       <div class="inds" id="inds"></div>
@@ -139,7 +139,7 @@
         </select>
         <select id="qCat" aria-label="Categoria" onchange="renderLanc()"></select>
         <select id="qStatus" aria-label="Situação" onchange="renderLanc()">
-          <option value="">Qualquer situação</option><option value="pago">Pagos</option><option value="pendente">A pagar</option><option value="atrasado">Atrasados</option>
+          <option value="">Qualquer situação</option><option value="pago">Pagas</option><option value="pendente">A pagar</option><option value="atrasado">Vencidas</option>
         </select>
         <input id="qMin" inputmode="decimal" placeholder="Valor mínimo" aria-label="Valor mínimo" oninput="renderLanc()">
         <input id="qMax" inputmode="decimal" placeholder="Valor máximo" aria-label="Valor máximo" oninput="renderLanc()">
@@ -188,12 +188,12 @@
     <!-- ===== AJUSTES ===== -->
     <section class="pg" id="pg-ajustes">
       <div class="g2">
-        <div class="card"><h2><span data-i="user"></span>Perfil</h2><p class="sub">Como o sistema chama você.</p>
+        <div class="card"><h2>Perfil</h2><p class="sub">Como o sistema chama você.</p>
           <label class="rot" for="aNome">Seu nome</label>
-          <input id="aNome" maxlength="30" placeholder="Digite seu nome" autocomplete="off" ><button class="btn sec" onclick="defNome()">Salvar nome</button>
+          <div class="linha"><input id="aNome" maxlength="30" placeholder="Digite seu nome" autocomplete="off"><button class="btn sec" onclick="defNome()">Salvar nome</button></div>
           <span class="rot">Avatar</span><div class="chips" id="aAvs"></div>
         </div>
-        <div class="card"><h2><span data-i="lock"></span>Acesso</h2><p class="sub"><span id="accountEmail"></span></p><p id="privacyState"></p>
+        <div class="card"><h2>Acesso</h2><p class="sub"><span id="accountEmail"></span></p><p id="privacyState"></p>
           <form id="privacyForm">
             <label class="rot" for="confirmPassword">Senha atual da conta</label>
             <input type="password" id="confirmPassword" autocomplete="current-password" required>
@@ -204,7 +204,7 @@
             <button class="btn sec" type="submit" id="disablePrivacy" hidden>Desativar bloqueio</button></div>
             <p role="status" id="privacyStatus"></p>
           </form><button class="btn sec" onclick="sair()"><span data-i="log-out"></span>Sair da conta</button></div>
-        <div class="card"><h2><span data-i="palette"></span>Aparência</h2><p class="sub">Muda na hora, em todas as telas e gráficos.</p>
+        <div class="card"><h2>Aparência</h2>
           <span class="rot">Tema</span>
           <div class="seg" id="aTema"><button data-v="escuro"><span data-i="moon"></span>Escuro</button><button data-v="claro"><span data-i="sun"></span>Claro</button><button data-v="auto"><span data-i="monitor-smartphone"></span>Seguir o aparelho</button></div>
           <span class="rot">Cor de destaque</span>
@@ -212,7 +212,7 @@
           <span class="rot">Tom do fundo</span><div class="chips" id="aTons"></div>
           <span class="rot">Cansou?</span><button class="btn sec" onclick="padraoVisual()">Voltar ao visual original</button>
         </div>
-        <div class="card"><h2><span data-i="bell"></span>Notificações</h2><p class="sub">Os avisos aparecem no sino, no alto da tela.</p>
+        <div class="card"><h2>Notificações</h2><p class="sub">Os avisos aparecem no sino, no alto da tela.</p>
           <label class="sw"><input type="checkbox" id="nVenc" onchange="defCfg('avVenc',this.checked)"><i></i>Avisar de contas vencendo e atrasadas</label>
           <label class="rot" for="nDias">Avisar com quantos dias de antecedência</label>
           <select id="nDias" onchange="defCfg('diasAviso',+this.value)">
@@ -223,7 +223,7 @@
           <label class="sw"><input type="checkbox" id="nSaldo" onchange="defCfg('avSaldo',this.checked)"><i></i>Avisar quando o mês atual ficar no vermelho (contando a caixinha)</label>
           <label class="sw"><input type="checkbox" id="nNav" onchange="ligarNotifNav(this.checked)"><i></i>Mostrar também como aviso do navegador ao abrir</label>
         </div>
-        <div class="card"><h2><span data-i="tag"></span>Categorias</h2><p class="sub">Troque ícone, nome e cor. Só dá para apagar categoria sem lançamentos.</p>
+        <div class="card"><h2>Categorias</h2><p class="sub">Troque ícone, nome e cor. Só dá para apagar categoria sem lançamentos.</p>
           <div id="aCats"></div>
           <span class="rot">Nova categoria</span>
           <div class="catEd">
@@ -234,18 +234,26 @@
             <button class="btn sec" onclick="addCat()">Adicionar</button>
           </div>
         </div>
-        <div class="card"><h2><span data-i="database"></span>Dados</h2><p class="sub">Baixe uma cópia dos dados da sua conta ou restaure um backup JSON.</p>
+        <div class="card"><h2>Dados</h2><p class="sub">Guarde uma cópia dos dados da sua conta.</p>
           <div class="botoes">
             <button class="btn sec" onclick="exportar()">Baixar backup</button>
-            <button class="btn sec" onclick="document.getElementById('arq').click()">Carregar backup</button>
             <button class="btn sec" onclick="exportarCSV(false)">Baixar tudo em planilha (CSV)</button>
           </div>
-          <input type="file" id="arq" accept=".json,application/json" style="display:none" onchange="importar(event)">
-          <span class="rot">Ano dos lançamentos</span>
-          <p class="sub">Use se as datas ficaram no ano errado. Move todos os lançamentos de uma vez.</p>
-          <div class="botoes"><button class="btn sec" onclick="deslocarAno(-1)">Voltar 1 ano</button><button class="btn sec" onclick="deslocarAno(1)">Avançar 1 ano</button></div>
-          <span class="rot">Recomeçar</span>
-          <div class="botoes"><button class="btn sec perigo" onclick="apagarLancamentos()">Apagar todos os lançamentos</button></div>
+          <div class="secao">
+            <span class="rot">Restaurar um backup</span>
+            <p class="sub">Substitui todos os dados desta conta pelos do arquivo JSON. Baixe um backup antes.</p>
+            <div class="botoes"><button class="btn sec" onclick="document.getElementById('arq').click()">Carregar backup</button></div>
+            <input type="file" id="arq" accept=".json,application/json" style="display:none" onchange="importar(event)">
+          </div>
+          <div class="secao">
+            <span class="rot">Ano dos lançamentos</span>
+            <p class="sub">Use se as datas ficaram no ano errado. Move todos os lançamentos de uma vez.</p>
+            <div class="botoes"><button class="btn sec" onclick="deslocarAno(-1)">Voltar 1 ano</button><button class="btn sec" onclick="deslocarAno(1)">Avançar 1 ano</button></div>
+          </div>
+          <div class="secao">
+            <span class="rot">Recomeçar</span>
+            <div class="botoes"><button class="btn sec perigo" onclick="apagarLancamentos()">Apagar todos os lançamentos</button></div>
+          </div>
         </div>
       </div>
     </section>
@@ -284,7 +292,7 @@
         </select>
       </div>
     </div>
-    <div class="msg" id="fMsg" role="alert"></div>
+    <p class="msg" id="fMsg" role="alert"></p>
     <div class="mdBase"><button class="btn sec perigo" id="fDel" onclick="apagarDoForm()"><span data-i="trash-2"></span>Apagar</button><button class="btn sec" id="fDup" onclick="duplicarDoForm()"><span data-i="copy"></span>Duplicar</button><button class="btn" onclick="salvarForm()">Salvar lançamento</button></div>
   </div>
 </div>

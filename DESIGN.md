@@ -33,7 +33,7 @@ O tema escuro atual combina fundo quase preto (`#070707`), superfície (`#121212
 - **Agrupamento.** Usar uma superfície para itens que se leem juntos. Dentro de “Próximas contas a pagar”, uma lista com divisórias finas atende melhor à leitura de vencimentos do que um cartão completo por conta. Reservar sombra para elementos sobrepostos, como o formulário de lançamento.
 - **Distâncias.** Como referência para ajustes, usar 8 px entre controles relacionados, 12–16 px dentro de um grupo e 24 px entre assuntos. Ajustar pela proximidade percebida. Um rótulo deve ficar visualmente mais perto do próprio campo do que do anterior.
 
-Verificar texto regular com meta de contraste de 4,5:1, inclusive nos temas personalizados. Testar a ação principal com destaque amarelo e com azul escuro para conferir se o texto continua legível sobre ambos.
+Verificar texto regular com meta de contraste de 4,5:1, inclusive nos temas personalizados. Testar a ação principal com destaque amarelo e com azul escuro para conferir se o texto continua legível sobre ambos. O aplicativo escolhe texto branco ou escuro sobre a cor de destaque conforme o maior contraste e ajusta o tom dos links até atingir 4,5:1 sobre as superfícies.
 
 ## 4. Regras por tela
 
@@ -54,7 +54,7 @@ Verificar texto regular com meta de contraste de 4,5:1, inclusive nos temas pers
 - Em formulários, manter rótulos visíveis acima dos campos. Informar o problema no campo correspondente e preservar o que já foi digitado. Exemplo: “Informe um valor maior que zero.”
 - Distinguir uma conta nova de um filtro sem resultados. Na primeira, “Nenhum lançamento ainda” pode vir com “Criar lançamento”. Na segunda, “Nenhum lançamento neste período” combina com “Alterar período”.
 - Reservar uma indicação breve para gravações em andamento. Exibir sucesso após confirmação. Quando a conexão cair e o resultado estiver incerto, explicar a próxima ação: “Recarregue para conferir se o lançamento foi salvo.”
-- Manter os ícones de categoria escolhidos pela pessoa. Para comandos como editar, duplicar e excluir, usar uma família de ícones consistente, nome acessível e área de toque confortável. No celular, comandos menos frequentes podem compartilhar um menu de ações identificado pelo lançamento.
+- Manter os ícones de categoria escolhidos pela pessoa. Para comandos como editar, duplicar e excluir, usar uma família de ícones consistente, nome acessível e área de toque confortável. No celular, comandos menos frequentes podem compartilhar um menu de ações identificado pelo lançamento. No painel e no celular, a linha abre o lançamento e o formulário reúne duplicar e apagar. Na lista de Lançamentos, com mouse, esses comandos aparecem ao passar pela linha ou ao chegar nela pelo teclado.
 
 ## 6. Celular e acessibilidade
 
