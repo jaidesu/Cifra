@@ -33,7 +33,7 @@
     <form id="unlockForm" data-mode="pin" hidden>
       <p class="sub">Digite seu PIN para abrir o Cifra.</p>
       <label for="unlockSecret" id="unlockLabel">PIN</label>
-      <input id="unlockSecret" class="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="72" required>
+      <input id="unlockSecret" class="pin" type="password" inputmode="numeric" autocomplete="offf" maxlength="72" required>
       <button class="btn" id="unlockButton"><span data-i="lock"></span>Desbloquear</button>
       <div class="unlock-links">
         <button class="link" type="button" id="unlockMode">Usar a senha da conta</button>
